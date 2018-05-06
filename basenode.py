@@ -3,14 +3,15 @@
 from kivy.uix.floatlayout import FloatLayout
 from twisted.internet import reactor
 
-from .log import NodeLoggingMixin
+from .log import LoggingGuiMixin
 from .nodeid import NodeIDGuiMixin
 from .busy import BusySpinnerGuiMixin
 from .background import BackgroundGuiMixin
-
-from .busy import NodeBusyMixin
-from .nodeid import NodeIDMixin
 from .structure import BaseGuiStructureMixin
+
+from .log import NodeLoggingMixin
+from .nodeid import NodeIDMixin
+from .busy import NodeBusyMixin
 
 
 class BaseIoTNode(NodeBusyMixin, NodeIDMixin, NodeLoggingMixin):
@@ -27,7 +28,7 @@ class BaseIoTNode(NodeBusyMixin, NodeIDMixin, NodeLoggingMixin):
         self._log.info("Stopping Node with ID {log_source.id}")
 
 
-class BaseIoTNodeGui(BackgroundGuiMixin, NodeIDGuiMixin,
+class BaseIoTNodeGui(LoggingGuiMixin, BackgroundGuiMixin, NodeIDGuiMixin,
                      BusySpinnerGuiMixin, BaseGuiStructureMixin,
                      BaseIoTNode):
     _gui_color_1 = (0xff / 255, 0xff / 255, 0xff / 255)
@@ -54,4 +55,5 @@ class BaseIoTNodeGui(BackgroundGuiMixin, NodeIDGuiMixin,
         self._gui_disable_multitouch_emulation()
         # Setup GUI elements from other Mixins
         NodeIDGuiMixin.gui_setup(self)
+        LoggingGuiMixin.gui_setup(self)
         return self.gui_root
