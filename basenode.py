@@ -30,7 +30,9 @@ class BaseIoTNode(NodeBusyMixin, NodeIDMixin, NodeLoggingMixin):
 class BaseIoTNodeGui(BackgroundGuiMixin, NodeIDGuiMixin,
                      BusySpinnerGuiMixin, BaseGuiStructureMixin,
                      BaseIoTNode):
-    _has_gui = True
+    _gui_color_1 = (0xff / 255, 0xff / 255, 0xff / 255)
+    _gui_color_2 = (0xff / 255, 0xff / 255, 0xff / 255)
+    _gui_color_bg = (0x00 / 255, 0x00 / 255, 0x00 / 255)
 
     def __init__(self, *args, **kwargs):
         self._application = kwargs.pop('application')

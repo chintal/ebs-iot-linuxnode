@@ -4,6 +4,7 @@ import netifaces
 import uuid
 
 from .widgets import ColorLabel
+from .widgets import color_set_alpha
 
 
 class NodeIDMixin(object):
@@ -50,6 +51,9 @@ class NodeIDMixin(object):
 
 
 class NodeIDGuiMixin(NodeIDMixin):
+    _gui_nodeid_bgcolor = None
+    _gui_nodeid_color = None
+
     def __init__(self, *args, **kwargs):
         super(NodeIDGuiMixin, self).__init__(*args, **kwargs)
         self._gui_id_tag = None
@@ -57,10 +61,12 @@ class NodeIDGuiMixin(NodeIDMixin):
     @property
     def gui_id_tag(self):
         if not self._gui_id_tag:
+            params = {'bgcolor': self._gui_nodeid_bgcolor or color_set_alpha(self._gui_color_1, 0.4),
+                      'color': [0, 0, 0, 1]}
             self._gui_id_tag = ColorLabel(
                 text=self.id, size_hint=(None, None),
-                width=250, height=50, bgcolor=[0, 1, 0, 0.25],
-                font_size='18sp', valign='middle', halign='center',
+                width=250, height=50, font_size='18sp',
+                valign='middle', halign='center', **params
             )
             self.gui_status_stack.add_widget(self._gui_id_tag)
         return self._gui_id_tag

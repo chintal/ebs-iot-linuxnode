@@ -1,6 +1,7 @@
 
 
-from kivy.garden.progressspinner import ProgressSpinner
+from kivy.garden.progressspinner import TextureProgressSpinner
+from .widgets import Gradient
 
 
 class NodeBusyMixin(object):
@@ -18,6 +19,9 @@ class NodeBusyMixin(object):
 
 
 class BusySpinnerGuiMixin(NodeBusyMixin):
+    _gui_busy_spinner_class = TextureProgressSpinner
+    _gui_busy_spinner_props = {}
+
     def __init__(self, *args, **kwargs):
         self._gui_busy_spinner = None
         super(BusySpinnerGuiMixin, self).__init__(*args, **kwargs)
@@ -50,7 +54,11 @@ class BusySpinnerGuiMixin(NodeBusyMixin):
     @property
     def gui_busy_spinner(self):
         if not self._gui_busy_spinner:
-            self._gui_busy_spinner = ProgressSpinner(
-                size_hint=(None, None), height=50, pos_hint={'left': 1}
+            props = self._gui_busy_spinner_props
+            _texture = Gradient.horizontal(self._gui_color_1, self._gui_color_2)
+            props['texture'] = _texture
+            self._gui_busy_spinner = self._gui_busy_spinner_class(
+                size_hint=(None, None), height=50, pos_hint={'left': 1},
+                **self._gui_busy_spinner_props
             )
         return self._gui_busy_spinner
