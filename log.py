@@ -72,9 +72,8 @@ class LoggingGuiMixin(NodeLoggingMixin):
                                              size_hint=(1, None))
 
             self._gui_log = ColorLabel(
-                size_hint=(1, 1), padding=(8, 8), font_size='12sp',
-                bgcolor=[0, 0, 0, 0.2], halign='left', valign='top',
-                markup=True
+                size_hint=(1, 1), padding=(8, 8), bgcolor=[0, 0, 0, 0.2],
+                halign='left', valign='top', markup=True, font_size='12sp',
             )
 
             self._gui_log_end = Label(size_hint=(1, None), height=1)
@@ -106,7 +105,7 @@ class LoggingGuiMixin(NodeLoggingMixin):
 
     def gui_log_observer(self, event):
         ll = event['log_level'].name
-        msg = "[{0:^8}] {1} {2}".format(
+        msg = "[font=RobotoMono-Regular][{0:^8}][/font] {1} {2}".format(
             ll.upper(),
             datetime.fromtimestamp(event['log_time']).strftime("%d%m %H:%M:%S"),
             formatEvent(event)
