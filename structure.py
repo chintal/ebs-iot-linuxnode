@@ -61,3 +61,7 @@ class BaseGuiStructureMixin(object):
                                                 padding='8sp')
             self.gui_anchor_top_right.add_widget(self._gui_debug_stack)
         return self._gui_debug_stack
+
+    @property
+    def gui_root(self):
+        raise NotImplementedError

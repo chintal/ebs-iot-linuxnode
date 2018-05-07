@@ -32,7 +32,7 @@ class NodeLoggingMixin(object):
         super(NodeLoggingMixin, self).__init__(*args, **kwargs)
         self._log = logger.Logger(namespace=self._node_log_namespace,
                                   source=self)
-        self._reactor.callWhenRunning(self._start_logging)
+        self.reactor.callWhenRunning(self._start_logging)
 
     def _start_logging(self):
         # TODO Mention that docs don't say reactor should be running
@@ -41,6 +41,14 @@ class NodeLoggingMixin(object):
         # TODO Mention problem with IOBase vs TextIOWrapper
         # TODO log_source is not set when logger instantiated in __init__
         logger.globalLogBeginner.beginLoggingTo(self._log_observers)
+
+    @property
+    def log(self):
+        return self._log
+
+    @property
+    def reactor(self):
+        raise NotImplementedError
 
 
 class LoggingGuiMixin(NodeLoggingMixin):
@@ -128,3 +136,7 @@ class LoggingGuiMixin(NodeLoggingMixin):
         if not self._gui_display_log:
             return
         _ = self.gui_log
+
+    @property
+    def gui_debug_stack(self):
+        raise NotImplementedError

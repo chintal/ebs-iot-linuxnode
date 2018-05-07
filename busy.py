@@ -55,10 +55,22 @@ class BusySpinnerGuiMixin(NodeBusyMixin):
     def gui_busy_spinner(self):
         if not self._gui_busy_spinner:
             props = self._gui_busy_spinner_props
-            _texture = Gradient.horizontal(self._gui_color_1, self._gui_color_2)
+            _texture = Gradient.horizontal(self.gui_color_1, self.gui_color_2)
             props['texture'] = _texture
             self._gui_busy_spinner = self._gui_busy_spinner_class(
                 size_hint=(None, None), height=50, pos_hint={'left': 1},
                 **self._gui_busy_spinner_props
             )
         return self._gui_busy_spinner
+
+    @property
+    def gui_notification_stack(self):
+        raise NotImplementedError
+
+    @property
+    def gui_color_1(self):
+        raise NotImplementedError
+
+    @property
+    def gui_color_2(self):
+        raise NotImplementedError

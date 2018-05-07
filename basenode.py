@@ -27,13 +27,16 @@ class BaseIoTNode(NodeBusyMixin, NodeIDMixin, NodeLoggingMixin):
     def stop(self):
         self._log.info("Stopping Node with ID {log_source.id}")
 
+    @property
+    def reactor(self):
+        return self._reactor
 
-class BaseIoTNodeGui(LoggingGuiMixin, OverlayWindowGuiMixin, NodeIDGuiMixin,
-                     BusySpinnerGuiMixin, BaseGuiStructureMixin,
-                     BaseIoTNode):
+
+class BaseIoTNodeGui(BaseGuiStructureMixin, LoggingGuiMixin,
+                     OverlayWindowGuiMixin, NodeIDGuiMixin,
+                     BusySpinnerGuiMixin, BaseIoTNode):
     _gui_color_1 = (0xff / 255, 0xff / 255, 0xff / 255)
     _gui_color_2 = (0xff / 255, 0xff / 255, 0xff / 255)
-    _gui_color_bg = (0x00 / 255, 0x00 / 255, 0x00 / 255)
 
     def __init__(self, *args, **kwargs):
         self._application = kwargs.pop('application')
@@ -58,3 +61,11 @@ class BaseIoTNodeGui(LoggingGuiMixin, OverlayWindowGuiMixin, NodeIDGuiMixin,
         NodeIDGuiMixin.gui_setup(self)
         LoggingGuiMixin.gui_setup(self)
         return self.gui_root
+
+    @property
+    def gui_color_1(self):
+        return self._gui_color_1
+
+    @property
+    def gui_color_2(self):
+        return self._gui_color_2
