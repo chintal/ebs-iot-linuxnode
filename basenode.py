@@ -6,7 +6,7 @@ from twisted.internet import reactor
 from .log import LoggingGuiMixin
 from .nodeid import NodeIDGuiMixin
 from .busy import BusySpinnerGuiMixin
-from .background import BackgroundGuiMixin
+from .background import OverlayWindowGuiMixin
 from .structure import BaseGuiStructureMixin
 
 from .log import NodeLoggingMixin
@@ -28,7 +28,7 @@ class BaseIoTNode(NodeBusyMixin, NodeIDMixin, NodeLoggingMixin):
         self._log.info("Stopping Node with ID {log_source.id}")
 
 
-class BaseIoTNodeGui(LoggingGuiMixin, BackgroundGuiMixin, NodeIDGuiMixin,
+class BaseIoTNodeGui(LoggingGuiMixin, OverlayWindowGuiMixin, NodeIDGuiMixin,
                      BusySpinnerGuiMixin, BaseGuiStructureMixin,
                      BaseIoTNode):
     _gui_color_1 = (0xff / 255, 0xff / 255, 0xff / 255)
@@ -54,6 +54,7 @@ class BaseIoTNodeGui(LoggingGuiMixin, BackgroundGuiMixin, NodeIDGuiMixin,
     def gui_setup(self):
         self._gui_disable_multitouch_emulation()
         # Setup GUI elements from other Mixins
+        OverlayWindowGuiMixin.gui_setup(self)
         NodeIDGuiMixin.gui_setup(self)
         LoggingGuiMixin.gui_setup(self)
         return self.gui_root
