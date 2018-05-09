@@ -1,6 +1,7 @@
 
 
 import os
+import re
 from functools import partial
 from six.moves.urllib.parse import urlparse
 
@@ -17,7 +18,6 @@ class HttpClientMixin(object):
         super(HttpClientMixin, self).__init__(*args, **kwargs)
 
     def http_get(self, url, callback, errback=None, **kwargs):
-        print(url)
         deferred_response = self.http_session.get(url, **kwargs)
         deferred_response.addCallback(self._http_check_response)
         deferred_response.addCallbacks(
@@ -25,14 +25,14 @@ class HttpClientMixin(object):
             partial(self._http_error_handler, url=url, errback=errback)
         )
 
-    def http_download(self, url, destination, callback, errback=None, **kwargs):
-        destination = os.path.abspath(destination)
+    def http_download(self, url, dst, callback, errback=None, **kwargs):
+        dst = os.path.abspath(dst)
         self.log.info("Starting download {url} to {destination}",
-                      url=url, destination=destination)
+                      url=url, destination=dst)
         deferred_response = self._http_session.get(url, stream=True, **kwargs)
         deferred_response.addCallback(self._http_check_response)
         deferred_response.addCallbacks(
-            partial(self._http_download, destination=destination, callback=callback),
+            partial(self._http_download, destination=dst, callback=callback),
             partial(self._http_error_handler, url=url, errback=errback)
         )
 
@@ -51,7 +51,11 @@ class HttpClientMixin(object):
                 os.remove(d)
 
         if os.path.isdir(destination):
-            fname = os.path.basename(urlparse(response.url).path)
+            try:
+                fname = re.findall("filename=(.+)",
+                                   response.headers['content-disposition'])
+            except KeyError:
+                fname = os.path.basename(urlparse(response.url).path)
             destination = os.path.join(destination, fname)
 
         if not os.path.exists(os.path.split(destination)[0]):
