@@ -12,9 +12,10 @@ from .structure import BaseGuiStructureMixin
 from .log import NodeLoggingMixin
 from .nodeid import NodeIDMixin
 from .busy import NodeBusyMixin
+from .http import HttpClientMixin
 
 
-class BaseIoTNode(NodeBusyMixin, NodeIDMixin, NodeLoggingMixin):
+class BaseIoTNode(HttpClientMixin, NodeLoggingMixin, NodeBusyMixin, NodeIDMixin):
     _has_gui = False
 
     def __init__(self, *args, **kwargs):
@@ -26,6 +27,7 @@ class BaseIoTNode(NodeBusyMixin, NodeIDMixin, NodeLoggingMixin):
 
     def stop(self):
         self._log.info("Stopping Node with ID {log_source.id}")
+        HttpClientMixin.stop(self)
 
     @property
     def reactor(self):

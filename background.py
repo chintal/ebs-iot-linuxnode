@@ -71,7 +71,3 @@ class OverlayWindowGuiMixin(BackgroundGuiMixin):
 
     def gui_setup(self):
         super(OverlayWindowGuiMixin, self).gui_setup()
-
-    @property
-    def log(self):
-        raise NotImplementedError

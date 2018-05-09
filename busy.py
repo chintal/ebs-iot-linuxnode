@@ -15,6 +15,10 @@ class NodeBusyMixin(object):
 
     @busy.setter
     def busy(self, value):
+        self._busy_setter(value)
+
+    def _busy_setter(self, value):
+        self.log.debug("Setting node busy status to {0}".format(value))
         self._busy = value
 
 
@@ -32,7 +36,7 @@ class BusySpinnerGuiMixin(NodeBusyMixin):
 
     @busy.setter
     def busy(self, value):
-        self._busy = value
+        self._busy_setter(value)
         self._gui_update_busy()
 
     def _gui_update_busy(self):
