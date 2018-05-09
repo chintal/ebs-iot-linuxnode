@@ -11,8 +11,10 @@ from twisted.internet.task import cooperate
 from txrequests import Session
 from urllib3 import Retry
 
+from .basemixin import BaseMixin
 
-class HttpClientMixin(object):
+
+class HttpClientMixin(BaseMixin):
     def __init__(self, *args, **kwargs):
         self._http_session = None
         super(HttpClientMixin, self).__init__(*args, **kwargs)
@@ -99,3 +101,4 @@ class HttpClientMixin(object):
         if self._http_session:
             self.log.debug("Closing HTTP client session")
             self._http_session.close()
+        super(HttpClientMixin, self).stop()

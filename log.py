@@ -1,11 +1,13 @@
 
 
+import os
 import io
 from twisted import logger
 from twisted.logger import textFileLogObserver
 from twisted.logger import STDLibLogObserver
 from twisted.logger import formatEvent
 
+from appdirs import user_log_dir
 from datetime import datetime
 from collections import deque
 from kivy.core.window import Window
@@ -16,23 +18,27 @@ from kivy.effects.scroll import ScrollEffect
 from kivy.utils import get_hex_from_color
 from .widgets import ColorLabel
 
+from .basemixin import BaseMixin
+from .basemixin import BaseGuiMixin
+
 import logging
 logging.basicConfig(level=logging.DEBUG)
 
 
-class NodeLoggingMixin(object):
-    _log_observers = [
-        # STDLibLogObserver(),
-        textFileLogObserver(io.open('runlog', 'a'))
-    ]
+class NodeLoggingMixin(BaseMixin):
     _log = None
-    _node_log_namespace = None
 
     def __init__(self, *args, **kwargs):
         super(NodeLoggingMixin, self).__init__(*args, **kwargs)
-        self._log = logger.Logger(namespace=self._node_log_namespace,
+        self._log = logger.Logger(namespace=self._appname,
                                   source=self)
         self.reactor.callWhenRunning(self._start_logging)
+
+    def _observers(self):
+        return [
+            # STDLibLogObserver(),
+            textFileLogObserver(io.open(self.log_file, 'a'))
+        ]
 
     def _start_logging(self):
         # TODO Mention that docs don't say reactor should be running
@@ -40,18 +46,24 @@ class NodeLoggingMixin(object):
         # TODO Find out about a functional print to console observer
         # TODO Mention problem with IOBase vs TextIOWrapper
         # TODO log_source is not set when logger instantiated in __init__
-        logger.globalLogBeginner.beginLoggingTo(self._log_observers)
+        logger.globalLogBeginner.beginLoggingTo(self._observers())
+        self.log.info("Logging to {logfile}", logfile=self.log_file)
 
     @property
     def log(self):
         return self._log
 
     @property
-    def reactor(self):
-        raise NotImplementedError
+    def log_file(self):
+        return os.path.join(self.log_dir, 'runlog')
+
+    @property
+    def log_dir(self):
+        os.makedirs(user_log_dir(self._appname), exist_ok=True)
+        return user_log_dir(self._appname)
 
 
-class LoggingGuiMixin(NodeLoggingMixin):
+class LoggingGuiMixin(BaseGuiMixin):
     def __init__(self, *args, **kwargs):
         self._gui_display_log = kwargs.pop('debug', False)
         self._gui_log = None
@@ -61,11 +73,11 @@ class LoggingGuiMixin(NodeLoggingMixin):
         self._gui_log_lines = deque([], maxlen=100)
         super(LoggingGuiMixin, self).__init__(*args, **kwargs)
 
-    def _start_logging(self):
-        observers = self._log_observers
+    def _observers(self):
+        rv = NodeLoggingMixin._observers(self)
         if self._gui_display_log:
-            observers += [self.gui_log_observer]
-        logger.globalLogBeginner.beginLoggingTo(observers)
+            rv.extend([self.gui_log_observer])
+        return rv
 
     @property
     def gui_log(self):
@@ -133,10 +145,7 @@ class LoggingGuiMixin(NodeLoggingMixin):
         self._gui_log.text = '\n'.join(self._gui_log_lines)
 
     def gui_setup(self):
+        super(LoggingGuiMixin, self).gui_setup()
         if not self._gui_display_log:
             return
         _ = self.gui_log
-
-    @property
-    def gui_debug_stack(self):
-        raise NotImplementedError

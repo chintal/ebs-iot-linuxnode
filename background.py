@@ -2,9 +2,10 @@
 
 from kivy.core.window import Window
 from .widgets import BleedImage
+from .basemixin import BaseGuiMixin
 
 
-class BackgroundGuiMixin(object):
+class BackgroundGuiMixin(BaseGuiMixin):
     _gui_background_color = [0, 1, 0, 0.25]
     _gui_background_source = 'images/background.png'
 
@@ -21,11 +22,8 @@ class BackgroundGuiMixin(object):
         return self._bg_image
 
     def gui_setup(self):
+        super(BackgroundGuiMixin, self).gui_setup()
         _ = self.gui_bg_image
-
-    @property
-    def gui_root(self):
-        raise NotImplementedError
 
 
 class OverlayWindowGuiMixin(BackgroundGuiMixin):

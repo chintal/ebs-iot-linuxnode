@@ -2,10 +2,12 @@
 
 from kivy.uix.anchorlayout import AnchorLayout
 from kivy.uix.stacklayout import StackLayout
+from kivy.uix.floatlayout import FloatLayout
 
 
 class BaseGuiStructureMixin(object):
     def __init__(self, *args, **kwargs):
+        self._gui_root = None
         self._gui_anchor_br = None
         self._gui_anchor_bl = None
         self._gui_anchor_tr = None
@@ -64,4 +66,6 @@ class BaseGuiStructureMixin(object):
 
     @property
     def gui_root(self):
-        raise NotImplementedError
+        if not self._gui_root:
+            self._gui_root = FloatLayout()
+        return self._gui_root

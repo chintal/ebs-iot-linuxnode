@@ -6,8 +6,11 @@ import uuid
 from .widgets import ColorLabel
 from .widgets import color_set_alpha
 
+from .basemixin import BaseMixin
+from .basemixin import BaseGuiMixin
 
-class NodeIDMixin(object):
+
+class NodeIDMixin(BaseMixin):
     _node_id_getter = "uuid"
     _node_id_params = {}
     _node_id_netifaces_fallback_interfaces = ['wlp1s0', 'wlan0', 'eth0']
@@ -50,7 +53,7 @@ class NodeIDMixin(object):
         return mac.replace(':', '')
 
 
-class NodeIDGuiMixin(NodeIDMixin):
+class NodeIDGuiMixin(BaseGuiMixin):
     _gui_nodeid_bgcolor = None
     _gui_nodeid_color = None
 
@@ -73,12 +76,5 @@ class NodeIDGuiMixin(NodeIDMixin):
         return self._gui_id_tag
 
     def gui_setup(self):
+        super(NodeIDGuiMixin, self).gui_setup()
         _ = self.gui_id_tag
-
-    @property
-    def gui_color_1(self):
-        raise NotImplementedError
-
-    @property
-    def gui_status_stack(self):
-        raise NotImplementedError
