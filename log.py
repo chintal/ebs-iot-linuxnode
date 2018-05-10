@@ -18,6 +18,7 @@ from kivy.effects.scroll import ScrollEffect
 from kivy.utils import get_hex_from_color
 from .widgets import ColorLabel
 
+from .config import ConfigMixin
 from .basemixin import BaseMixin
 from .basemixin import BaseGuiMixin
 
@@ -25,7 +26,7 @@ import logging
 logging.basicConfig(level=logging.DEBUG)
 
 
-class NodeLoggingMixin(BaseMixin):
+class NodeLoggingMixin(ConfigMixin, BaseMixin):
     _log = None
 
     def __init__(self, *args, **kwargs):
@@ -63,9 +64,8 @@ class NodeLoggingMixin(BaseMixin):
         return user_log_dir(self._appname)
 
 
-class LoggingGuiMixin(BaseGuiMixin):
+class LoggingGuiMixin(ConfigMixin, BaseGuiMixin):
     def __init__(self, *args, **kwargs):
-        self._gui_display_log = kwargs.pop('debug', False)
         self._gui_log = None
         self._gui_log_end = None
         self._gui_log_layout = None
@@ -75,7 +75,7 @@ class LoggingGuiMixin(BaseGuiMixin):
 
     def _observers(self):
         rv = NodeLoggingMixin._observers(self)
-        if self._gui_display_log:
+        if self.config.gui_log_display:
             rv.extend([self.gui_log_observer])
         return rv
 
@@ -146,6 +146,6 @@ class LoggingGuiMixin(BaseGuiMixin):
 
     def gui_setup(self):
         super(LoggingGuiMixin, self).gui_setup()
-        if not self._gui_display_log:
+        if not self.config.gui_log_display:
             return
         _ = self.gui_log

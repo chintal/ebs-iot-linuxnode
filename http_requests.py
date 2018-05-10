@@ -12,12 +12,13 @@ from txrequests import Session
 from urllib3 import Retry
 
 from .basemixin import BaseMixin
+from .log import NodeLoggingMixin
 
 
-class HttpClientMixin(BaseMixin):
+class RequestsHttpClientMixin(NodeLoggingMixin, BaseMixin):
     def __init__(self, *args, **kwargs):
         self._http_session = None
-        super(HttpClientMixin, self).__init__(*args, **kwargs)
+        super(RequestsHttpClientMixin, self).__init__(*args, **kwargs)
 
     def http_get(self, url, callback, errback=None, **kwargs):
         deferred_response = self.http_session.get(url, **kwargs)
@@ -31,7 +32,7 @@ class HttpClientMixin(BaseMixin):
         dst = os.path.abspath(dst)
         self.log.info("Starting download {url} to {destination}",
                       url=url, destination=dst)
-        deferred_response = self._http_session.get(url, stream=True, **kwargs)
+        deferred_response = self.http_session.get(url, stream=True, **kwargs)
         deferred_response.addCallback(self._http_check_response)
         deferred_response.addCallbacks(
             partial(self._http_download, destination=dst, callback=callback),
@@ -40,7 +41,7 @@ class HttpClientMixin(BaseMixin):
 
     def _http_download(self, response, destination=None, callback=None):
         def _stream_download(r, f):
-            for chunk in r.iter_content(chunk_size=1024):
+            for chunk in r.iter_content(chunk_size=128):
                 f.write(chunk)
                 yield None
 
@@ -101,4 +102,7 @@ class HttpClientMixin(BaseMixin):
         if self._http_session:
             self.log.debug("Closing HTTP client session")
             self._http_session.close()
-        super(HttpClientMixin, self).stop()
+        super(RequestsHttpClientMixin, self).stop()
+
+
+HttpClientMixin = RequestsHttpClientMixin

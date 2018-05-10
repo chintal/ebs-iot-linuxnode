@@ -9,10 +9,10 @@ from .widgets import color_set_alpha
 from .basemixin import BaseMixin
 from .basemixin import BaseGuiMixin
 
+from .config import ConfigMixin
 
-class NodeIDMixin(BaseMixin):
-    _node_id_getter = "uuid"
-    _node_id_params = {}
+
+class NodeIDMixin(ConfigMixin, BaseMixin):
     _node_id_netifaces_fallback_interfaces = ['wlp1s0', 'wlan0', 'eth0']
 
     def __init__(self, *args, **kwargs):
@@ -26,8 +26,9 @@ class NodeIDMixin(BaseMixin):
         return self._id
 
     def _get_id(self):
-        getter = "_get_node_id_{0}".format(self._node_id_getter)
-        return getattr(self, getter)(**self._node_id_params).upper()
+        getter = "_get_node_id_{0}".format(self.config.node_id_getter)
+        params = {'interface': self.config.node_id_interface}
+        return getattr(self, getter)(**params).upper()
 
     def _get_node_id_uuid(self, **_):
         node_id = uuid.getnode()

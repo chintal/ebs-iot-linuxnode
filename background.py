@@ -3,9 +3,10 @@
 from kivy.core.window import Window
 from .widgets import BleedImage
 from .basemixin import BaseGuiMixin
+from .config import ConfigMixin
 
 
-class BackgroundGuiMixin(BaseGuiMixin):
+class BackgroundGuiMixin(ConfigMixin, BaseGuiMixin):
     _gui_background_color = [0, 1, 0, 0.25]
     _gui_background_source = 'images/background.png'
 
@@ -60,12 +61,19 @@ class OverlayWindowGuiMixin(BackgroundGuiMixin):
             self._gui_overlay_mode_exit()
 
     def _gui_overlay_mode_enter(self):
+        if self._overlay_mode:
+            return
+        self._overlay_mode = True
         Window.clearcolor = [0, 0, 0, 0]
         self.gui_root.remove_widget(self._bg_image)
 
     def _gui_overlay_mode_exit(self):
+        if not self._overlay_mode:
+            return
+        self._overlay_mode = False
         self.gui_root.add_widget(self._bg_image, len(self.gui_root.children))
         Window.clearcolor = [0, 0, 0, 1]
 
     def gui_setup(self):
         super(OverlayWindowGuiMixin, self).gui_setup()
+        self.overlay_mode = self.config.overlay_mode

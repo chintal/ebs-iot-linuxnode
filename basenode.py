@@ -8,7 +8,7 @@ from .background import OverlayWindowGuiMixin
 from .log import NodeLoggingMixin
 from .nodeid import NodeIDMixin
 from .busy import NodeBusyMixin
-from .http import HttpClientMixin
+from .http_treq import HttpClientMixin
 
 from .resources import ResourceManagerMixin
 
@@ -21,9 +21,11 @@ class BaseIoTNode(ResourceManagerMixin, HttpClientMixin,
         super(BaseIoTNode, self).__init__(*args, **kwargs)
 
     def start(self):
+        super(BaseIoTNode, self).start()
         self._log.info("Starting Node with ID {log_source.id}")
 
     def stop(self):
+        super(BaseIoTNode, self).stop()
         self._log.info("Stopping Node with ID {log_source.id}")
 
 
