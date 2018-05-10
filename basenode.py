@@ -8,7 +8,7 @@ from .background import OverlayWindowGuiMixin
 from .log import NodeLoggingMixin
 from .nodeid import NodeIDMixin
 from .busy import NodeBusyMixin
-from .http_treq import HttpClientMixin
+from .http import HttpClientMixin
 
 from .resources import ResourceManagerMixin
 

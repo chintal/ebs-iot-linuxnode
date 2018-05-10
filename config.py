@@ -25,6 +25,10 @@ overlay_mode = config.getboolean('display', 'overlay_mode', fallback=False)
 node_id_getter = config.get('id', 'getter', fallback='uuid')
 node_id_interface = config.get('id', 'interface', fallback=None)
 
+# HTTP
+
+http_client_provider = config.get('http', 'client_provider', fallback='requests')
+
 
 class ConfigMixin(object):
     def __init__(self, *args, **kwargs):

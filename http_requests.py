@@ -90,7 +90,7 @@ class RequestsHttpClientMixin(NodeLoggingMixin, BaseMixin):
     @property
     def http_session(self):
         if not self._http_session:
-            self.log.debug("Starting HTTP client session")
+            self.log.debug("Starting requests HTTP client session")
             r = Retry(backoff_factor=2,
                       raise_on_status=True, raise_on_redirect=True)
             self._http_session = Session()

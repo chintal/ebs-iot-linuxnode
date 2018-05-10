@@ -30,6 +30,7 @@ class TreqHttpClientMixin(NodeLoggingMixin, BaseMixin):
             callback,
             partial(self._http_error_handler, url=url, errback=errback)
         )
+        deferred_response.addErrback(self._http_error_swallow)
         return deferred_response
 
     def http_download(self, url, dst, callback, errback=None, **kwargs):
@@ -83,6 +84,7 @@ class TreqHttpClientMixin(NodeLoggingMixin, BaseMixin):
     @property
     def http_client(self):
         if not self._http_client:
+            self.log.info("Creating treq HTTPClient")
             self._http_client = HTTPClient(agent=Agent(reactor=self.reactor))
         return self._http_client
 
@@ -93,5 +95,7 @@ class TreqHttpClientMixin(NodeLoggingMixin, BaseMixin):
 
 # TODO
 # Treq implementation does not currently support retries.
+# If you don't need large file / streaming download,
+# use the requests provider instead.
 
 HttpClientMixin = TreqHttpClientMixin
