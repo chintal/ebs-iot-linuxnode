@@ -20,26 +20,35 @@ class RequestsHttpClientMixin(NodeLoggingMixin, BaseMixin):
         self._http_session = None
         super(RequestsHttpClientMixin, self).__init__(*args, **kwargs)
 
-    def http_get(self, url, callback, errback=None, **kwargs):
+    def http_get(self, url, **kwargs):
         deferred_response = self.http_session.get(url, **kwargs)
         deferred_response.addCallback(self._http_check_response)
-        deferred_response.addCallbacks(
-            callback,
-            partial(self._http_error_handler, url=url, errback=errback)
+        deferred_response.addErrback(self._deferred_error_passthrough)
+        deferred_response.addErrback(
+            partial(self._http_error_handler, url=url)
         )
+        return deferred_response
 
-    def http_download(self, url, dst, callback, errback=None, **kwargs):
+    def http_download(self, url, dst, callback=None, errback=None, **kwargs):
         dst = os.path.abspath(dst)
-        self.log.info("Starting download {url} to {destination}",
-                      url=url, destination=dst)
+        # self.log.debug("Starting download {url} to {destination}",
+        #                url=url, destination=dst)
         deferred_response = self.http_session.get(url, stream=True, **kwargs)
         deferred_response.addCallback(self._http_check_response)
         deferred_response.addCallbacks(
-            partial(self._http_download, destination=dst, callback=callback),
-            partial(self._http_error_handler, url=url, errback=errback)
+            partial(self._http_download, destination=dst),
+            partial(self._http_error_handler, url=url)
         )
 
-    def _http_download(self, response, destination=None, callback=None):
+        if callback:
+            deferred_response.addCallback(partial(callback,
+                                                  url=url, destination=dst))
+        if errback:
+            deferred_response.addErrback(errback)
+
+        return deferred_response
+
+    def _http_download(self, response, destination=None):
         def _stream_download(r, f):
             for chunk in r.iter_content(chunk_size=128):
                 f.write(chunk)
@@ -68,19 +77,16 @@ class RequestsHttpClientMixin(NodeLoggingMixin, BaseMixin):
         cooperative_dl = cooperate(_stream_download(response, filehandle))
         cooperative_dl.whenDone().addCallback(lambda _: response.close)
         cooperative_dl.whenDone().addCallback(lambda _: filehandle.close)
-        cooperative_dl.whenDone().addCallback(
-            partial(callback, url=response.url, destination=destination)
-        )
         cooperative_dl.whenDone().addErrback(
             partial(_rollback, r=response, f=filehandle, d=destination)
         )
+        return cooperative_dl.whenDone()
 
-    def _http_error_handler(self, failure, url=None, errback=None):
+    def _http_error_handler(self, failure, url=None):
         failure.trap(HTTPError)
         self.log.warn("Encountered error {e} when trying to get {url}",
                       e=failure.value.response.status_code, url=url)
-        if errback:
-            errback(failure)
+        return failure
 
     @staticmethod
     def _http_check_response(response):

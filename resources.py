@@ -1,7 +1,9 @@
 
 
 import os
+import time
 import dataset
+from functools import partial
 from appdirs import user_cache_dir
 from .http import HttpClientMixin
 from .config import cache_max_size
@@ -107,13 +109,20 @@ class ResourceManager(object):
     def prefetch(self, resource):
         # Given a resource belonging to this resource manager, download it
         # to the cache if it isn't already there or update its mtime if it is.
-        def _blank_callback(*args, **kwargs):
-            pass
         if not resource.available:
             self._node.log.debug("Downloading {filename}",
                                  filename=resource.filename)
-            return self._node.http_download(resource.url, resource.cache_path,
-                                            callback=_blank_callback)
+            d = self._node.http_download(resource.url, resource.cache_path)
+
+            # Update timestamps for the downloaded file to reflect start of
+            # download instead of end. Consider if this is wise.
+            def _cb_set_file_times(fpath, times, _):
+                with open(fpath, 'a'):
+                    os.utime(fpath, times)
+            d.addCallback(partial(_cb_set_file_times, resource.cache_path,
+                                  (time.time(), time.time())))
+
+            return d
         else:
             # TODO handle resume here instead
             # Check actual content length, available content length, and
@@ -251,6 +260,7 @@ class CachingResourceManager(ResourceManager):
 
     def _cache_trimmer_fifo(self):
         resources = self.cache_resources_mtime
+        self._cache_debug(resources)
         if len(resources):
             return self.cache_remove(resources[0].filename)
         else:
@@ -258,6 +268,16 @@ class CachingResourceManager(ResourceManager):
 
     def _cache_trimmer_predictive(self):
         raise NothingToTrimError()
+
+    def _cache_debug(self, resources):
+        self._node.log.debug("------------------")
+        for r in resources:
+            self._node.log.debug(
+                "{mtime:<24} {filename}",
+                filename=r.filename,
+                mtime=os.path.getmtime(r.cache_path)
+            )
+        self._node.log.debug("------------------")
 
 
 class ResourceManagerMixin(HttpClientMixin):

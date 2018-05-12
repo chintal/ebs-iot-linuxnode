@@ -9,11 +9,7 @@ from treq.client import HTTPClient
 
 from .basemixin import BaseMixin
 from .log import NodeLoggingMixin
-
-
-class HttpError(Exception):
-    def __init__(self, response):
-        self.response = response
+from .http_utils import HTTPError
 
 
 class TreqHttpClientMixin(NodeLoggingMixin, BaseMixin):
@@ -21,20 +17,19 @@ class TreqHttpClientMixin(NodeLoggingMixin, BaseMixin):
         self._http_client = None
         super(TreqHttpClientMixin, self).__init__(*args, **kwargs)
 
-    def http_get(self, url, callback, errback=None, **kwargs):
+    def http_get(self, url, **kwargs):
         deferred_response = self.http_client.get(url, **kwargs)
-        deferred_response.addCallback(
-            self._http_check_response
-        )
-        deferred_response.addCallback(callback)
+        deferred_response.addCallback(self._http_check_response)
+        deferred_response.addErrback(self._deferred_error_passthrough)
         deferred_response.addErrback(
-            partial(self._http_error_handler, url=url, errback=errback)
+            partial(self._http_error_handler, url=url)
         )
-        deferred_response.addErrback(self._http_error_swallow)
         return deferred_response
 
-    def http_download(self, url, dst, callback, errback=None, **kwargs):
+    def http_download(self, url, dst, callback=None, errback=None, **kwargs):
         dst = os.path.abspath(dst)
+        # self.log.debug("Starting download {url} to {destination}",
+        #                url=url, destination=dst)
         if os.path.isdir(dst):
             fname = os.path.basename(urlparse(url).path)
             dst = os.path.join(dst, fname)
@@ -43,18 +38,20 @@ class TreqHttpClientMixin(NodeLoggingMixin, BaseMixin):
             os.makedirs(os.path.split(dst)[0])
 
         deferred_response = self.http_client.get(url, **kwargs)
-        deferred_response.addCallback(self._http_check_response)
-        deferred_response.addErrback(
-            partial(self._http_error_handler, url=url, errback=errback)
-        )
+        deferred_response.dst = dst
 
-        deferred_response.addCallback(self._http_download, destination_path=dst)
+        deferred_response.addCallback(self._http_check_response)
         deferred_response.addErrback(self._deferred_error_passthrough)
 
-        deferred_response.addCallback(
-            partial(callback, url=url, destination=dst),
+        deferred_response.addCallback(self._http_download, destination_path=dst)
+        deferred_response.addErrback(
+            partial(self._http_error_handler, url=url)
         )
-        deferred_response.addErrback(self._http_error_swallow)
+
+        if callback:
+            deferred_response.addCallback(callback, url=url, destination=dst)
+        if errback:
+            deferred_response.addErrback(errback)
 
         return deferred_response
 
@@ -64,22 +61,17 @@ class TreqHttpClientMixin(NodeLoggingMixin, BaseMixin):
         d.addBoth(lambda _: destination.close())
         return d
 
-    def _http_error_swallow(self, failure):
-        failure.trap(HttpError)
-
-    def _http_error_handler(self, failure, url=None, errback=None):
-        failure.trap(HttpError)
+    def _http_error_handler(self, failure, url=None):
+        failure.trap(HTTPError)
         self.log.warn("Encountered error {e} when trying to {method} {url}",
                       e=failure.value.response.code,
                       method=failure.value.response.request.method, url=url)
-        if errback:
-            errback(failure)
         return failure
 
     @staticmethod
     def _http_check_response(response):
         if 400 < response.code < 600:
-            raise HttpError(response=response)
+            raise HTTPError(response=response)
         return response
 
     @property
