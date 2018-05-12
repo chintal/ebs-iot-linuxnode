@@ -29,6 +29,10 @@ node_id_interface = config.get('id', 'interface', fallback=None)
 
 http_client_provider = config.get('http', 'client_provider', fallback='requests')
 
+# Cache
+
+cache_max_size = config.getint('cache', 'max_size', fallback='10000000')
+
 
 class ConfigMixin(object):
     def __init__(self, *args, **kwargs):

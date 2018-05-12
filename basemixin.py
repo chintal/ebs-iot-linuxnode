@@ -24,6 +24,10 @@ class BaseMixin(object):
     def reactor(self):
         return self._reactor
 
+    @property
+    def appname(self):
+        return self._appname
+
 
 class BaseGuiMixin(BaseGuiStructureMixin):
     _gui_color_1 = (0xff / 255, 0xff / 255, 0xff / 255)

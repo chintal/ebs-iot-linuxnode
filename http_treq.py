@@ -26,8 +26,8 @@ class TreqHttpClientMixin(NodeLoggingMixin, BaseMixin):
         deferred_response.addCallback(
             self._http_check_response
         )
-        deferred_response.addCallbacks(
-            callback,
+        deferred_response.addCallback(callback)
+        deferred_response.addErrback(
             partial(self._http_error_handler, url=url, errback=errback)
         )
         deferred_response.addErrback(self._http_error_swallow)
@@ -61,7 +61,8 @@ class TreqHttpClientMixin(NodeLoggingMixin, BaseMixin):
     def _http_download(self, response, destination_path):
         destination = open(destination_path, 'wb')
         d = treq.collect(response, destination.write)
-        d.addBoth(lambda _ : destination.close())
+        d.addBoth(lambda _: destination.close())
+        return d
 
     def _http_error_swallow(self, failure):
         failure.trap(HttpError)
@@ -85,7 +86,11 @@ class TreqHttpClientMixin(NodeLoggingMixin, BaseMixin):
     def http_client(self):
         if not self._http_client:
             self.log.info("Creating treq HTTPClient")
-            self._http_client = HTTPClient(agent=Agent(reactor=self.reactor))
+            # Silence the twisted.web.client._HTTP11ClientFactory
+            from twisted.web.client import _HTTP11ClientFactory
+            _HTTP11ClientFactory.noisy = False
+            agent = Agent(reactor=self.reactor)
+            self._http_client = HTTPClient(agent=agent)
         return self._http_client
 
     def stop(self):
