@@ -14,11 +14,19 @@ class NodeBusyMixin(NodeLoggingMixin, BaseMixin):
 
     @property
     def busy(self):
-        return self._busy
+        if self._busy > 0:
+            return True
+        else:
+            return False
 
-    @busy.setter
-    def busy(self, value):
-        self._busy_setter(value)
+    def busy_set(self):
+        self._busy += 1
+
+    def busy_clear(self):
+        self._busy -= 1
+        if self._busy < 0:
+            self.log.warn("Busy cleared too many times!")
+            self._busy = 0
 
     def _busy_setter(self, value):
         self.log.debug("Setting node busy status to {0}".format(value))
@@ -33,17 +41,16 @@ class BusySpinnerGuiMixin(NodeBusyMixin, BaseGuiMixin):
         self._gui_busy_spinner = None
         super(BusySpinnerGuiMixin, self).__init__(*args, **kwargs)
 
-    @property
-    def busy(self):
-        return self._busy
+    def busy_set(self):
+        super(BusySpinnerGuiMixin, self).busy_set()
+        self._gui_update_busy()
 
-    @busy.setter
-    def busy(self, value):
-        self._busy_setter(value)
+    def busy_clear(self):
+        super(BusySpinnerGuiMixin, self).busy_clear()
         self._gui_update_busy()
 
     def _gui_update_busy(self):
-        if self._busy is True:
+        if self.busy is True:
             self._gui_busy_show()
         else:
             self._gui_busy_clear()

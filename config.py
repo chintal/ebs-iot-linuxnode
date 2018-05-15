@@ -28,6 +28,7 @@ node_id_interface = config.get('id', 'interface', fallback=None)
 # HTTP
 
 http_client_provider = config.get('http', 'client_provider', fallback='requests')
+http_max_concurrent_downloads = config.getint('http', 'max_concurrent_download', fallback=1)
 
 # Cache
 

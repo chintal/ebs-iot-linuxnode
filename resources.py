@@ -56,6 +56,13 @@ class CacheableResource(object):
         else:
             return False
 
+    @property
+    def is_orphaned(self):
+        if not self.rtype:
+            return True
+        else:
+            return False
+
     def commit(self):
         with self._manager.db as db:
             db['resources'].upsert(
@@ -81,6 +88,7 @@ class ResourceManager(object):
         self._db = None
         self._db_dir = None
         self._cache_dir = None
+        self._active_downloads = []
         super(ResourceManager, self).__init__(**kwargs)
 
     def has(self, filename):
@@ -109,24 +117,28 @@ class ResourceManager(object):
     def prefetch(self, resource):
         # Given a resource belonging to this resource manager, download it
         # to the cache if it isn't already there or update its mtime if it is.
+        if resource.filename in self._active_downloads:
+            return
         if not resource.available:
-            self._node.log.debug("Downloading {filename}",
-                                 filename=resource.filename)
+            self._active_downloads.append(resource.filename)
+            # self._node.log.debug("Requesting download of {filename}",
+            #                      filename=resource.filename)
             d = self._node.http_download(resource.url, resource.cache_path)
 
             # Update timestamps for the downloaded file to reflect start of
             # download instead of end. Consider if this is wise.
-            def _cb_set_file_times(fpath, times, _):
-                with open(fpath, 'a'):
-                    os.utime(fpath, times)
-            d.addCallback(partial(_cb_set_file_times, resource.cache_path,
-                                  (time.time(), time.time())))
+            def _dl_finalize(r, times, _):
+                with open(r.cache_path, 'a'):
+                    os.utime(r.cache_path, times)
 
+            d.addCallback(
+                partial(_dl_finalize, resource, (time.time(), time.time()))
+            )
+            d.addBoth(
+                lambda _: self._active_downloads.remove(resource.filename)
+            )
             return d
         else:
-            # TODO handle resume here instead
-            # Check actual content length, available content length, and
-            # download the rest if they aren't equal.
             with open(resource.cache_path, 'a'):
                 os.utime(resource.cache_path, None)
 
@@ -172,6 +184,7 @@ class CachingResourceManager(ResourceManager):
         d = super(CachingResourceManager, self).prefetch(resource)
         if d:
             d.addCallback(self.cache_trim)
+        return d
 
     def cache_remove(self, filename):
         size = self.cache_file_size(filename)
@@ -203,7 +216,8 @@ class CachingResourceManager(ResourceManager):
 
     def _cache_files(self):
         for filename in os.listdir(self.cache_dir):
-            if os.path.isfile(self.cache_path(filename)):
+            if os.path.isfile(self.cache_path(filename)) and \
+                    not filename.endswith('.partial'):
                 yield filename
 
     @property
@@ -214,21 +228,47 @@ class CachingResourceManager(ResourceManager):
         raise NotImplementedError
 
     def cache_trim(self, max_size=None, space_for=0):
-        # Trim the cache to the provided max_size.
-        #  - Remove all cached content items which have no known next_use
-        #  - Trim cache down to max_size by removing content items starting
-        #    with the one with next_use most in the future, up to about 30
-        #    minutes from the current time
+        # Trim the cache cache down to max_size by removing content items to
+        # the provided max_size.
+        #  - First remove all cache items which are orphaned (aren't in the
+        #    resource database) one by one
+        #  - Remove cache items which are defined as content by its rtype as
+        #    per the auto-selected trimfunc.
         #
-        # If next_use is not implemented, this will fallback to a simple
-        # FIFO cache based on the mtime of the cached content item.
+        # fifo
+        #  - Selected if both 'next_use' and 'last_use' are not defined on
+        #    the resource.
+        #  - Remove the oldest cached content file by mtime, one by one.
+        #  - Note that this implementation actually modifies a typical FIFO
+        #    cache into a pseudo-LRU cache by it's updating cache item
+        #    timestamps whenever prefetch is called.
         #
-        # TODO This should return a deferred
+        # lru
+        #  - Selected if the resource defines 'last_use' and not 'next_use'.
+        #  - Remove the least recently used cached content file, one by one.
+        #  - Note that if this is used, the application should be sure to set
+        #    'last_use' to something meaningful, perhaps timestamp of
+        #    creation time, before trim is called.
+        #  - LRU is not intended for regular use, it's here for largely
+        #    academic purposes.
+        #
+        # predictive
+        #  - Selected if the resource defines 'next_use'. This is the
+        #    preferred cache trimmer.
+        #  - Remove cached content items which have no known 'next_use',
+        #    one by one
+        #  - Remove cached content with 'next_use' set to the past.
+        #  - Remove cached content items with 'next_use' most in the future,
+        #    up to about 30 minutes from the current time
+        #
+        # TODO This should maybe return a deferred
         if max_size is None:
             max_size = self.cache_max_size
         max_size = max_size - space_for
-        if hasattr(self._resource_class, 'nextuse'):
+        if hasattr(self._resource_class, 'next_use'):
             trimmer = self._cache_trimmer_predictive
+        elif hasattr(self._resource_class, 'last_use'):
+            trimmer = self._cache_trimmer_lru
         else:
             trimmer = self._cache_trimmer_fifo
         current_size = self.cache_size
@@ -237,8 +277,9 @@ class CachingResourceManager(ResourceManager):
                              max_size=max_size, current_size=current_size,
                              trimmer=trimmer.__name__)
         while current_size > max_size:
+            resources = list(self.cache_resources)
             try:
-                current_size -= trimmer()
+                current_size -= self._cache_trimmer(resources, trimmer)
             except NothingToTrimError:
                 return False
             # TODO Yield none for cooperate
@@ -250,34 +291,64 @@ class CachingResourceManager(ResourceManager):
     def _cache_resources(self):
         for filename in self.cache_files:
             resource = self.get(filename)
-            if resource.is_content or not resource.rtype:
-                yield resource
+            yield resource
 
-    @property
-    def cache_resources_mtime(self):
-        return sorted(self.cache_resources, reverse=False,
-                      key=lambda x: os.path.getmtime(x.cache_path))
+    def _cache_trimmer(self, resources, trimfunc):
+        for resource in resources:
+            if resource.is_orphaned:
+                return self.cache_remove(resource.filename)
+        return trimfunc([x for x in resources if x.is_content])
 
-    def _cache_trimmer_fifo(self):
-        resources = self.cache_resources_mtime
-        self._cache_debug(resources)
-        if len(resources):
-            return self.cache_remove(resources[0].filename)
+    def _cache_trimmer_fifo(self, resources):
+        r = sorted(resources, key=lambda x: os.path.getmtime(x.cache_path))
+        # self._cache_debug(r, 'by mtime',
+        #                   lambda x: os.path.getmtime(x.cache_path))
+        if len(r):
+            return self.cache_remove(r[0].filename)
         else:
             raise NothingToTrimError()
 
-    def _cache_trimmer_predictive(self):
+    def _cache_trimmer_lru(self, resources):
+        r = sorted(resources, key=lambda x: x.last_use)
+        # self._cache_debug(r, 'by last_use', lambda x: x.last_use)
+        if len(r):
+            return self.cache_remove(r[0].filename)
+        else:
+            raise NothingToTrimError()
+
+    def _cache_trimmer_predictive(self, resources):
+        # No next_use
+        r = [x for x in resources if not x.next_use]
+        if len(r):
+            return self._cache_trimmer_fifo(r)
+
+        # Next_use, next_use in the past
+        r = sorted((x for x in resources if x.next_use < time.time()),
+                   key=lambda x: x.next_use)
+        # self._cache_debug(r, 'by next_use in past', lambda x: x.next_use)
+        if len(r):
+            return self.cache_remove(r[0].filename)
+
+        # Next_use, next_use in the future
+        r = sorted((x for x in resources
+                    if x.next_use > time.time() + (30 * 60 * 1000)),
+                   key=lambda x: x.next_use, reverse=True)
+        # self._cache_debug(r, 'by next_use in future', lambda x: x.next_use)
+        if len(r):
+            return self.cache_remove(r[0].filename)
+
         raise NothingToTrimError()
 
-    def _cache_debug(self, resources):
-        self._node.log.debug("------------------")
+    def _cache_debug(self, resources, title, keyfunc):
+        self._node.log.debug("------------------------------------")
+        self._node.log.debug("Cache Content {0}".format(title))
         for r in resources:
             self._node.log.debug(
-                "{mtime:<24} {filename}",
+                "{key:<24} {filename}",
                 filename=r.filename,
-                mtime=os.path.getmtime(r.cache_path)
+                key=keyfunc(r)
             )
-        self._node.log.debug("------------------")
+        self._node.log.debug("----------------------------------- ")
 
 
 class ResourceManagerMixin(HttpClientMixin):
