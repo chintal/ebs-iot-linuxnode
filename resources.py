@@ -5,6 +5,8 @@ import time
 import dataset
 from functools import partial
 from appdirs import user_cache_dir
+from twisted.internet.defer import succeed
+
 from .http import HttpClientMixin
 from .config import cache_max_size
 
@@ -37,6 +39,10 @@ class CacheableResource(object):
     @property
     def cache_path(self):
         return self._manager.cache_path(self.filename)
+
+    @property
+    def filepath(self):
+        return self.cache_path
 
     @property
     def available(self):
@@ -184,6 +190,8 @@ class CachingResourceManager(ResourceManager):
         d = super(CachingResourceManager, self).prefetch(resource)
         if d:
             d.addCallback(self.cache_trim)
+        else:
+            d = succeed(None)
         return d
 
     def cache_remove(self, filename):

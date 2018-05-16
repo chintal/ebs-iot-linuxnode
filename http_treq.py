@@ -100,16 +100,14 @@ class TreqHttpClientMixin(NodeBusyMixin, NodeLoggingMixin, BaseMixin):
         return deferred_response
 
     def _http_download_response(self, response, destination_path):
-        # self.log.debug("Actual download for {destination}",
-        #                destination=destination_path)
         if response.code == 206:
             # TODO Check that the range is actually correct?
-            self.log.debug("Got partial content response for {dst}",
-                           dst=destination_path)
+            # self.log.debug("Got partial content response for {dst}",
+            #                dst=destination_path)
             append = True
         else:
-            self.log.debug("Got full content response for {dst}",
-                           dst=destination_path)
+            # self.log.debug("Got full content response for {dst}",
+            #                dst=destination_path)
             append = False
         temp_path = destination_path + '.partial'
         if not append:

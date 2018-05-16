@@ -73,6 +73,6 @@ class BusySpinnerGuiMixin(NodeBusyMixin, BaseGuiMixin):
             props['texture'] = _texture
             self._gui_busy_spinner = self._gui_busy_spinner_class(
                 size_hint=(None, None), height=50, pos_hint={'left': 1},
-                **self._gui_busy_spinner_props
+                **props
             )
         return self._gui_busy_spinner

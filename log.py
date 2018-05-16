@@ -79,14 +79,40 @@ class LoggingGuiMixin(ConfigMixin, BaseGuiMixin):
             rv.extend([self.gui_log_observer])
         return rv
 
+    def gui_log_observer(self, event):
+        ll = event['log_level'].name
+        msg = "[font=RobotoMono-Regular][{0:^8}][/font] {1} {2}".format(
+            ll.upper(),
+            datetime.fromtimestamp(event['log_time']).strftime("%d%m %H:%M:%S"),
+            formatEvent(event)
+        )
+        color = None
+        if ll == 'warn':
+            color = [1, 1, 0, 1]
+        elif ll == 'error':
+            color = [1, 0, 0, 1]
+        elif ll == 'critical':
+            color = [1, 0, 0, 1]
+        if color:
+            color = get_hex_from_color(color)
+            msg = '[color={0}]{1}[/color]'.format(color, msg)
+
+        self._gui_log_lines.append(msg)
+        self._gui_log.text = '\n'.join(self._gui_log_lines)
+
     @property
     def gui_log(self):
         if not self._gui_log:
             self._gui_log_scroll = ScrollView(
                 size_hint=(None, None), bar_pos_y='right',
                 bar_color=[1, 1, 1, 1], effect_cls=ScrollEffect,
-                do_scroll_x=False, do_scroll_y=True,
-                size=(Window.width * 0.3, Window.height * 0.3))
+                do_scroll_x=False, do_scroll_y=True)
+
+            def _set_log_size(_, size):
+                width = min(max(700, size[0] * 0.3), size[0])
+                height = size[1] * 0.6
+                self._gui_log_scroll.size = width, height
+            self.gui_root.bind(size=_set_log_size)
 
             self._gui_log_layout = BoxLayout(orientation='vertical',
                                              size_hint=(1, None))
@@ -122,27 +148,6 @@ class LoggingGuiMixin(ConfigMixin, BaseGuiMixin):
             self._gui_log_scroll.add_widget(self._gui_log_layout)
             self.gui_debug_stack.add_widget(self._gui_log_scroll)
         return self._gui_log
-
-    def gui_log_observer(self, event):
-        ll = event['log_level'].name
-        msg = "[font=RobotoMono-Regular][{0:^8}][/font] {1} {2}".format(
-            ll.upper(),
-            datetime.fromtimestamp(event['log_time']).strftime("%d%m %H:%M:%S"),
-            formatEvent(event)
-        )
-        color = None
-        if ll == 'warn':
-            color = [1, 1, 0, 1]
-        elif ll == 'error':
-            color = [1, 0, 0, 1]
-        elif ll == 'critical':
-            color = [1, 0, 0, 1]
-        if color:
-            color = get_hex_from_color(color)
-            msg = '[color={0}]{1}[/color]'.format(color, msg)
-
-        self._gui_log_lines.append(msg)
-        self._gui_log.text = '\n'.join(self._gui_log_lines)
 
     def gui_setup(self):
         super(LoggingGuiMixin, self).gui_setup()
