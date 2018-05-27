@@ -1,5 +1,6 @@
 
 
+import os
 from kivy.core.window import Window
 from .widgets import BleedImage
 from .basemixin import BaseGuiMixin
@@ -7,20 +8,28 @@ from .config import ConfigMixin
 
 
 class BackgroundGuiMixin(ConfigMixin, BaseGuiMixin):
-    _gui_background_color = [0, 1, 0, 0.25]
-    _gui_background_source = 'images/background.png'
-
     def __init__(self, *args, **kwargs):
         self._bg_image = None
+        self._gui_background_color = kwargs.pop('background_color', None)
         super(BackgroundGuiMixin, self).__init__(*args, **kwargs)
 
     @property
     def gui_bg_image(self):
         if self._bg_image is None:
-            self._bg_image = BleedImage(source=self._gui_background_source,
-                                        bgcolor=self._gui_background_color)
+            self._bg_image = BleedImage(
+                source=self.config.background,
+                bgcolor=self._gui_background_color or 'auto'
+            )
             self.gui_root.add_widget(self._bg_image)
         return self._bg_image
+
+    @gui_bg_image.setter
+    def gui_bg_image(self, value):
+        if not os.path.exists(value):
+            return
+        self.gui_bg_image.source = value
+        # TODO Write config to disk
+        self.config.background = value
 
     def gui_setup(self):
         super(BackgroundGuiMixin, self).gui_setup()

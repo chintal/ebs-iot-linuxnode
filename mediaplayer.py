@@ -54,7 +54,13 @@ class MediaPlayerGuiMixin(OverlayWindowGuiMixin):
         self._media_playing = Image(source=filepath)
         self.gui_mediaview.add_widget(self._media_playing)
 
-    def _media_play_video(self, filepath, loop=False):
+    def _media_play_video(self, *args, **kwargs):
+        if self.config.video_player is None:
+            self._media_play_video_native(*args, **kwargs)
+        elif self.config.video_player == 'omxplayer':
+            self._media_play_video_omxplayer(*args, **kwargs)
+
+    def _media_play_video_native(self, filepath, loop=False):
         if loop:
             eos = 'loop'
         else:
@@ -73,8 +79,14 @@ class MediaPlayerGuiMixin(OverlayWindowGuiMixin):
 
         self.gui_mediaview.add_widget(self._media_playing)
 
+    def _media_play_video_omxplayer(self, filepath, loop=False):
+        dispmanx_layer = self.config.video_dispmanx_layer
+
     def media_stop(self):
-        self._media_playing.unload()
+        if isinstance(self._media_playing, Video):
+            self._media_playing.unload()
+        if isinstance(self._media_playing, Image):
+            pass
         self.gui_mediaview.clear_widgets()
         MediaPlayerMixin.media_stop(self)
 

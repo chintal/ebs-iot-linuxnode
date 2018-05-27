@@ -1,8 +1,8 @@
 
 
-from .config import http_client_provider
+from .config import current_config
 
-if http_client_provider == 'treq':
+if current_config.http_client_provider == 'treq':
     from twisted.internet.error import DNSLookupError
 
     class HTTPError(Exception):
@@ -11,7 +11,7 @@ if http_client_provider == 'treq':
 
     _http_errors = (HTTPError, DNSLookupError)
 
-elif http_client_provider == 'requests':
+elif current_config.http_client_provider == 'requests':
     from requests import HTTPError
     _http_errors = (HTTPError, )
 

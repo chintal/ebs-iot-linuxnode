@@ -13,7 +13,6 @@ from .log import NodeLoggingMixin
 from .busy import NodeBusyMixin
 from .http_utils import HTTPError
 from twisted.internet.error import DNSLookupError
-from .config import http_max_concurrent_downloads
 
 
 class NoResumeResponseError(Exception):
@@ -152,7 +151,7 @@ class TreqHttpClientMixin(NodeBusyMixin, NodeLoggingMixin, BaseMixin):
     @property
     def http_semaphore(self):
         if self._http_semaphore is None:
-            n = http_max_concurrent_downloads
+            n = self.config.http_max_concurrent_downloads
             self._http_semaphore = DeferredSemaphore(n)
             _ = self.http_client
         return self._http_semaphore

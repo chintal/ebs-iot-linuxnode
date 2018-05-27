@@ -1,11 +1,12 @@
 
 
-from .config import http_client_provider
+from .config import current_config
 
-if http_client_provider == 'treq':
+
+if current_config.http_client_provider == 'treq':
     from .http_treq import HttpClientMixin
 
-elif http_client_provider == 'requests':
+elif current_config.http_client_provider == 'requests':
     from .http_requests import HttpClientMixin
 
 else:

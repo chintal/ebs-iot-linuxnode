@@ -3,11 +3,15 @@
 from kivy.uix.anchorlayout import AnchorLayout
 from kivy.uix.stacklayout import StackLayout
 from kivy.uix.floatlayout import FloatLayout
+from kivy.uix.boxlayout import BoxLayout
 
 
 class BaseGuiStructureMixin(object):
     def __init__(self, *args, **kwargs):
         self._gui_root = None
+        self._gui_structure_root = None
+        self._gui_primary_root = None
+        self._gui_footer = None
         self._gui_anchor_br = None
         self._gui_anchor_bl = None
         self._gui_anchor_tr = None
@@ -21,7 +25,7 @@ class BaseGuiStructureMixin(object):
         if not self._gui_anchor_br:
             self._gui_anchor_br = AnchorLayout(anchor_x='right',
                                                anchor_y='bottom')
-            self.gui_root.add_widget(self._gui_anchor_br)
+            self.gui_primary_root.add_widget(self._gui_anchor_br)
         return self._gui_anchor_br
 
     @property
@@ -29,7 +33,7 @@ class BaseGuiStructureMixin(object):
         if not self._gui_anchor_bl:
             self._gui_anchor_bl = AnchorLayout(anchor_x='left',
                                                anchor_y='bottom')
-            self.gui_root.add_widget(self._gui_anchor_bl)
+            self.gui_primary_root.add_widget(self._gui_anchor_bl)
         return self._gui_anchor_bl
 
     @property
@@ -37,7 +41,7 @@ class BaseGuiStructureMixin(object):
         if not self._gui_anchor_tr:
             self._gui_anchor_tr = AnchorLayout(anchor_x='right',
                                                anchor_y='top')
-            self.gui_root.add_widget(self._gui_anchor_tr)
+            self.gui_primary_root.add_widget(self._gui_anchor_tr)
         return self._gui_anchor_tr
 
     @property
@@ -63,6 +67,29 @@ class BaseGuiStructureMixin(object):
                                                 padding='8sp')
             self.gui_anchor_top_right.add_widget(self._gui_debug_stack)
         return self._gui_debug_stack
+
+    @property
+    def gui_primary_root(self):
+        if not self._gui_primary_root:
+            self._gui_primary_root = FloatLayout()
+            self.gui_structure_root.add_widget(self._gui_primary_root)
+        return self._gui_primary_root
+
+    @property
+    def gui_footer(self):
+        if not self._gui_footer:
+            self._gui_footer = BoxLayout(orientation='vertical')
+            self.gui_structure_root.add_widget(
+                self._gui_footer, index=len(self.gui_structure_root.children)
+            )
+        return self._gui_footer
+
+    @property
+    def gui_structure_root(self):
+        if not self._gui_structure_root:
+            self._gui_structure_root = BoxLayout(orientation='vertical')
+            self.gui_root.add_widget(self._gui_structure_root)
+        return self._gui_structure_root
 
     @property
     def gui_root(self):

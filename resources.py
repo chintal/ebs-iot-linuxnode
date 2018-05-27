@@ -8,7 +8,6 @@ from appdirs import user_cache_dir
 from twisted.internet.defer import succeed
 
 from .http import HttpClientMixin
-from .config import cache_max_size
 
 
 ASSET = 1
@@ -183,7 +182,7 @@ class CachingResourceManager(ResourceManager):
 
     def __init__(self, *args, **kwargs):
         super(CachingResourceManager, self).__init__(*args, **kwargs)
-        self.cache_max_size = cache_max_size
+        self.cache_max_size = self._node.config.cache_max_size
 
     def prefetch(self, resource):
         # When done, trim the cache.
