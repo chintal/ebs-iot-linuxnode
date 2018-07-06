@@ -14,10 +14,55 @@ from .busy import NodeBusyMixin
 from .http_utils import HTTPError
 from twisted.internet.error import DNSLookupError
 
+from twisted.internet.protocol import Protocol
+from twisted.web.client import ResponseDone
+from twisted.web.http import PotentialDataLoss
+from twisted.internet.defer import Deferred, succeed
+
 
 class NoResumeResponseError(Exception):
     def __init__(self, code):
         self.code = code
+
+
+class WatchfulBodyCollector(Protocol):
+    def __init__(self, finished, collector, chunktimeout, reactor):
+        self.latest_tick = 0
+        self.chunktimeout = chunktimeout
+        self.reactor = reactor
+        self.finished = finished
+        self.collector = collector
+
+    def dataReceived(self, data):
+        self.collector(data)
+        if self.chunktimeout is not None:
+            self.latest_tick += 1
+            self.reactor.callLater(self.chunktimeout, self.checkTimeout,
+                                   self.latest_tick)
+
+    def checkTimeout(self, tick):
+        if tick == self.latest_tick:
+            # We've really timed out.
+            self.transport.loseConnection()
+
+    def connectionLost(self, reason):
+        self.latest_tick = 0
+        if reason.check(ResponseDone):
+            self.finished.callback(None)
+        elif reason.check(PotentialDataLoss):
+            # http://twistedmatrix.com/trac/ticket/4840
+            self.finished.callback(None)
+        else:
+            self.finished.errback(reason)
+
+
+def watchful_collect(response, collector, chunktimeout=None, reactor=None):
+    if response.length == 0:
+        return succeed(None)
+
+    d = Deferred()
+    response.deliverBody(WatchfulBodyCollector(d, collector, chunktimeout, reactor))
+    return d
 
 
 class TreqHttpClientMixin(NodeBusyMixin, NodeLoggingMixin, BaseMixin):
@@ -38,11 +83,10 @@ class TreqHttpClientMixin(NodeBusyMixin, NodeLoggingMixin, BaseMixin):
         return deferred_response
 
     def http_download(self, url, dst, callback=None, errback=None, **kwargs):
-        deferred_response = self._http_semaphore.run(
+        deferred_response = self.http_semaphore.run(
             self._http_download, url, dst,
             callback=callback, errback=errback, **kwargs
         )
-        # TODO Add an errback here which triggers a retry?
         return deferred_response
 
     def _http_download(self, url, dst, callback=None, errback=None, **kwargs):
@@ -113,9 +157,9 @@ class TreqHttpClientMixin(NodeBusyMixin, NodeLoggingMixin, BaseMixin):
             destination = open(temp_path, 'wb')
         else:
             destination = open(temp_path, 'ab')
-        d = treq.collect(response, destination.write)
+        collectmethod = partial(watchful_collect, chunktimeout=10, reactor=self.reactor)
+        d = collectmethod(response, destination.write)
 
-        # TODO Figure out what happens when the connection drops midway
         def _close_download_file(maybe_failure):
             destination.close()
             return maybe_failure
