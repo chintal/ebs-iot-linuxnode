@@ -125,14 +125,14 @@ class ResourceManager(object):
         # Given a resource belonging to this resource manager, download it
         # to the cache if it isn't already there or update its mtime if it is.
         if resource.filename in self._active_downloads:
-            return succeed(True)
+            return
         if resource.available:
             with open(resource.cache_path, 'a'):
                 os.utime(resource.cache_path, None)
-            return succeed(True)
+            return
 
         if retries is None:
-            retries = 6
+            retries = self._node.config.resource_prefetch_retries
 
         d = self._fetch(resource)
 
@@ -140,8 +140,10 @@ class ResourceManager(object):
             failure.trap(ResponseFailed, *_http_errors)
             attempts = attempts - 1
             if attempts:
-                self._node.reactor.callLater(600, self.prefetch,
-                                             resource, retries=attempts)
+                self._node.reactor.callLater(
+                    self._node.config.resource_prefetch_retry_delay,
+                    self.prefetch, resource, retries=attempts
+                )
         d.addErrback(partial(_retry, attempts=retries))
         return d
 
@@ -208,7 +210,12 @@ class CachingResourceManager(ResourceManager):
         # When done, trim the cache.
         d = super(CachingResourceManager, self).prefetch(resource,
                                                          retries=retries)
-        d.addCallback(self.cache_trim)
+        if d:
+            def fetch_postprocess(_):
+                self.cache_trim()
+            d.addCallback(fetch_postprocess)
+        else:
+            d = succeed(True)
         return d
 
     def cache_remove(self, filename):
@@ -256,7 +263,8 @@ class CachingResourceManager(ResourceManager):
         # Trim the cache cache down to max_size by removing content items to
         # the provided max_size.
         #  - First remove all cache items which are orphaned (aren't in the
-        #    resource database) one by one
+        #    resource database) one by one. Note that items are added to the
+        #    database before any attempt is made to prefetch it.
         #  - Remove cache items which are defined as content by its rtype as
         #    per the auto-selected trimfunc.
         #
@@ -307,7 +315,7 @@ class CachingResourceManager(ResourceManager):
                 current_size -= self._cache_trimmer(resources, trimmer)
             except NothingToTrimError:
                 return False
-            # TODO Yield none for cooperate
+            # TODO Yield none for cooperate (??)
 
     @property
     def cache_resources(self):
@@ -319,6 +327,7 @@ class CachingResourceManager(ResourceManager):
             yield resource
 
     def _cache_trimmer(self, resources, trimfunc):
+        # TODO Check about dangling temporary files.
         for resource in resources:
             if resource.is_orphaned:
                 return self.cache_remove(resource.filename)

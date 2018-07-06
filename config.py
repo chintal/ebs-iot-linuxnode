@@ -80,6 +80,15 @@ class IoTNodeConfig(object):
     def http_max_concurrent_downloads(self):
         return self._config.getint('http', 'max_concurrent_download', fallback=1)
 
+    # Resource Manager
+    @property
+    def resource_prefetch_retries(self):
+        return self._config.getint('resources', 'prefetch_retries', fallback=3)
+    
+    @property
+    def resource_prefetch_retry_delay(self):
+        return self._config.getint('resources', 'prefetch_retry_delay', fallback=5)
+
     # Cache
     @property
     def cache_max_size(self):
