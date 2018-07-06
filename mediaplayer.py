@@ -22,6 +22,10 @@ class MediaPlayerMixin(NodeLoggingMixin):
         # an image or with a looping video, not otherwise.
         if hasattr(content, 'filepath'):
             content = content.filepath
+        if not os.path.exists(content):
+            self.log.warn("Could not find media to play at {filepath}",
+                          filepath=content)
+            return
         if duration:
             self.reactor.callLater(duration, self.media_stop)
         if os.path.splitext(content)[1] in self._media_extentions_image:

@@ -1,7 +1,7 @@
 
 
 import os
-import treq
+
 from functools import partial
 from six.moves.urllib.parse import urlparse
 from twisted.web.client import Agent
@@ -82,14 +82,15 @@ class TreqHttpClientMixin(NodeBusyMixin, NodeLoggingMixin, BaseMixin):
         )
         return deferred_response
 
-    def http_download(self, url, dst, callback=None, errback=None, **kwargs):
+    def http_download(self, url, dst, **kwargs):
         deferred_response = self.http_semaphore.run(
             self._http_download, url, dst,
-            callback=callback, errback=errback, **kwargs
+            # callback=callback, errback=errback,
+            **kwargs
         )
         return deferred_response
 
-    def _http_download(self, url, dst, callback=None, errback=None, **kwargs):
+    def _http_download(self, url, dst, **kwargs):
         dst = os.path.abspath(dst)
         self.log.debug("Starting download {url} to {destination}",
                        url=url, destination=dst)
@@ -134,11 +135,6 @@ class TreqHttpClientMixin(NodeBusyMixin, NodeLoggingMixin, BaseMixin):
             self.busy_clear()
             return maybe_failure
         deferred_response.addBoth(_busy_clear)
-
-        if callback:
-            deferred_response.addCallback(callback, url=url, destination=dst)
-        if errback:
-            deferred_response.addErrback(errback)
 
         return deferred_response
 

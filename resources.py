@@ -6,8 +6,10 @@ import dataset
 from functools import partial
 from appdirs import user_cache_dir
 from twisted.internet.defer import succeed
+from twisted.web.client import ResponseFailed
 
 from .http import HttpClientMixin
+from .http_utils import _http_errors
 
 
 ASSET = 1
@@ -119,33 +121,51 @@ class ResourceManager(object):
         resource = self._resource_class(self, filename, url, rtype)
         resource.commit()
 
-    def prefetch(self, resource):
+    def prefetch(self, resource, retries=None):
         # Given a resource belonging to this resource manager, download it
         # to the cache if it isn't already there or update its mtime if it is.
         if resource.filename in self._active_downloads:
-            return
-        if not resource.available:
-            self._active_downloads.append(resource.filename)
-            # self._node.log.debug("Requesting download of {filename}",
-            #                      filename=resource.filename)
-            d = self._node.http_download(resource.url, resource.cache_path)
-
-            # Update timestamps for the downloaded file to reflect start of
-            # download instead of end. Consider if this is wise.
-            def _dl_finalize(r, times, _):
-                with open(r.cache_path, 'a'):
-                    os.utime(r.cache_path, times)
-
-            d.addCallback(
-                partial(_dl_finalize, resource, (time.time(), time.time()))
-            )
-            d.addBoth(
-                lambda _: self._active_downloads.remove(resource.filename)
-            )
-            return d
-        else:
+            return succeed(True)
+        if resource.available:
             with open(resource.cache_path, 'a'):
                 os.utime(resource.cache_path, None)
+            return succeed(True)
+
+        if retries is None:
+            retries = 6
+
+        d = self._fetch(resource)
+
+        def _retry(failure, attempts=1):
+            failure.trap(ResponseFailed, *_http_errors)
+            attempts = attempts - 1
+            if attempts:
+                self._node.reactor.callLater(600, self.prefetch,
+                                             resource, retries=attempts)
+        d.addErrback(partial(_retry, attempts=retries))
+        return d
+
+    def _fetch(self, resource):
+        self._active_downloads.append(resource.filename)
+        # self._node.log.debug("Requesting download of {filename}",
+        #                      filename=resource.filename)
+        d = self._node.http_download(resource.url, resource.cache_path)
+
+        # Update timestamps for the downloaded file to reflect start of
+        # download instead of end. Consider if this is wise.
+        def _dl_finalize(r, times, _):
+            with open(r.cache_path, 'a'):
+                os.utime(r.cache_path, times)
+
+        d.addCallback(
+            partial(_dl_finalize, resource, (time.time(), time.time()))
+        )
+
+        def _vacate_download(maybe_failure):
+            self._active_downloads.remove(resource.filename)
+            return maybe_failure
+        d.addBoth(_vacate_download)
+        return d
 
     @property
     def db(self):
@@ -184,13 +204,11 @@ class CachingResourceManager(ResourceManager):
         super(CachingResourceManager, self).__init__(*args, **kwargs)
         self.cache_max_size = self._node.config.cache_max_size
 
-    def prefetch(self, resource):
+    def prefetch(self, resource, retries=None):
         # When done, trim the cache.
-        d = super(CachingResourceManager, self).prefetch(resource)
-        if d:
-            d.addCallback(self.cache_trim)
-        else:
-            d = succeed(None)
+        d = super(CachingResourceManager, self).prefetch(resource,
+                                                         retries=retries)
+        d.addCallback(self.cache_trim)
         return d
 
     def cache_remove(self, filename):

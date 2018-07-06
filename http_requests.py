@@ -29,7 +29,7 @@ class RequestsHttpClientMixin(NodeLoggingMixin, BaseMixin):
         )
         return deferred_response
 
-    def http_download(self, url, dst, callback=None, errback=None, **kwargs):
+    def http_download(self, url, dst, **kwargs):
         dst = os.path.abspath(dst)
         # self.log.debug("Starting download {url} to {destination}",
         #                url=url, destination=dst)
@@ -39,12 +39,6 @@ class RequestsHttpClientMixin(NodeLoggingMixin, BaseMixin):
             partial(self._http_download, destination=dst),
             partial(self._http_error_handler, url=url)
         )
-
-        if callback:
-            deferred_response.addCallback(partial(callback,
-                                                  url=url, destination=dst))
-        if errback:
-            deferred_response.addErrback(errback)
 
         return deferred_response
 
