@@ -71,6 +71,10 @@ class IoTNodeConfig(object):
     def node_id_interface(self):
         return self._config.get('id', 'interface', fallback=None)
 
+    @property
+    def node_id_override(self):
+        return self._config.get('id', 'override', fallback=None)
+
     # HTTP
     @property
     def http_client_provider(self):
@@ -104,6 +108,20 @@ class IoTNodeConfig(object):
     def video_dispmanx_layer(self):
         if self.platform == 'rpi':
             return self._config.getint('video-rpi', 'dispmanx_video_layer', fallback=0)
+
+    # API
+    @property
+    def api_url(self):
+        return self._config.get('api', 'url', fallback=None)
+
+    @property
+    def api_token(self):
+        return self._config.get('api', 'token', fallback=None)
+
+    @api_token.setter
+    def api_token(self, value):
+        self._config.set('api', 'token', value)
+        self._write_config()
 
 
 class ConfigMixin(object):

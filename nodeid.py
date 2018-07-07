@@ -26,6 +26,8 @@ class NodeIDMixin(ConfigMixin, BaseMixin):
         return self._id
 
     def _get_id(self):
+        if self.config.node_id_override is not None:
+            return self.config.node_id_override
         getter = "_get_node_id_{0}".format(self.config.node_id_getter)
         params = {'interface': self.config.node_id_interface}
         return getattr(self, getter)(**params).upper()
