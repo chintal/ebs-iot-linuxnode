@@ -75,18 +75,37 @@ class TreqHttpClientMixin(NodeBusyMixin, NodeLoggingMixin, BaseMixin):
         deferred_response = self.http_semaphore.run(
             self.http_client.get, url, **kwargs
         )
-        deferred_response.addCallback(self._http_check_response)
-        deferred_response.addErrback(self._deferred_error_passthrough)
+        deferred_response.addCallbacks(
+            self._http_check_response,
+            self._deferred_error_passthrough
+        )
         deferred_response.addErrback(
             partial(self._http_error_handler, url=url)
         )
         return deferred_response
 
+    def http_post(self, url, **kwargs):
+        deferred_response = self.http_semaphore.run(
+            self.http_client.post, url, **kwargs
+        )
+
+        deferred_response.addCallbacks(
+            self._http_check_response,
+            self._deferred_error_passthrough
+        )
+
+        def _parse_json_response(response):
+            return response.json()
+        deferred_response.addCallbacks(
+            _parse_json_response,
+            partial(self._http_error_handler, url=url)
+        )
+
+        return deferred_response
+
     def http_download(self, url, dst, **kwargs):
         deferred_response = self.http_semaphore.run(
-            self._http_download, url, dst,
-            # callback=callback, errback=errback,
-            **kwargs
+            self._http_download, url, dst, **kwargs
         )
         return deferred_response
 

@@ -20,6 +20,9 @@ class BaseMixin(object):
     def _deferred_error_passthrough(self, failure):
         return failure
 
+    def _deferred_error_swallow(self, failure):
+        return
+
     @property
     def reactor(self):
         return self._reactor

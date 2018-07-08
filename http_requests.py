@@ -29,6 +29,9 @@ class RequestsHttpClientMixin(NodeLoggingMixin, BaseMixin):
         )
         return deferred_response
 
+    def http_post(self, url, **kwargs):
+        pass
+
     def http_download(self, url, dst, **kwargs):
         dst = os.path.abspath(dst)
         # self.log.debug("Starting download {url} to {destination}",

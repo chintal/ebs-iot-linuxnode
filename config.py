@@ -17,7 +17,7 @@ class IoTNodeConfig(object):
         self._apply_display_layer()
 
     def _write_config(self):
-        with open(self._config_file, 'wb') as configfile:
+        with open(self._config_file, 'w') as configfile:
             self._config.write(configfile)
 
     # Platform
@@ -120,7 +120,10 @@ class IoTNodeConfig(object):
 
     @api_token.setter
     def api_token(self, value):
-        self._config.set('api', 'token', value)
+        if not value:
+            self._config.remove_option('api', 'token')
+        else:
+            self._config.set('api', 'token', value)
         self._write_config()
 
 

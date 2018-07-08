@@ -14,7 +14,7 @@ from .resources import ResourceManagerMixin
 
 
 class BaseIoTNode(ResourceManagerMixin, HttpClientMixin,
-                  NodeBusyMixin, NodeIDMixin, NodeLoggingMixin):
+                  NodeBusyMixin, NodeLoggingMixin, NodeIDMixin):
     _has_gui = False
 
     def __init__(self, *args, **kwargs):
