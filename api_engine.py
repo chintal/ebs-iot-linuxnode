@@ -6,9 +6,6 @@ from ..iotnode.nodeid import NodeIDMixin
 
 
 class BaseApiEngineMixin(HttpClientMixin, NodeIDMixin):
-    _api_headers = {'Content=Type': 'application/json',
-                    'Accept': 'application/json'}
-
     _api_probe = None
     _api_tasks = []
 

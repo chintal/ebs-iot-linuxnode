@@ -231,9 +231,13 @@ class TreqHttpClientMixin(NodeBusyMixin, NodeLoggingMixin, BaseMixin):
         super(TreqHttpClientMixin, self).stop()
 
 
-# TODO
-# Treq implementation does not currently support retries.
-# If you don't need large file / streaming download,
-# use the requests provider instead.
+# Note:
+# Treq implementation does not support retries within itself.
+# The associated resource manager implementation demonstrates
+# how retries might be implemented on a per-request basis by
+# the application.
+#
+# If you don't need large file / streaming download but need
+# to support retries, use the requests provider instead.
 
 HttpClientMixin = TreqHttpClientMixin
