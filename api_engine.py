@@ -8,7 +8,7 @@ from ..iotnode.nodeid import NodeIDMixin
 class BaseApiEngineMixin(HttpClientMixin, NodeIDMixin):
     _api_probe = None
     _api_tasks = []
-
+    _api_headers = {}
     _api_reconnect_frequency = 30
 
     def __init__(self, *args, **kwargs):
