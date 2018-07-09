@@ -195,10 +195,7 @@ class ResourceManager(object):
 
     @property
     def db_dir(self):
-        if not self._db_dir:
-            self._db_dir = os.path.join(self.cache_dir, 'db')
-            os.makedirs(self._db_dir, exist_ok=True)
-        return self._db_dir
+        return self._node.db_dir
 
     @property
     def cache_dir(self):
@@ -419,6 +416,3 @@ class ResourceManagerMixin(HttpClientMixin):
     @property
     def cache_trim_exclusions(self):
         return []
-
-    def stop(self):
-        super(ResourceManagerMixin, self).stop()

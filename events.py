@@ -73,8 +73,12 @@ class Event(object):
 
     @start_time.setter
     def start_time(self, value):
-        # self._start_time = datetime.strptime(value, '%Y-%m-%d %H:%M:%S')
-        self._start_time = value
+        if not value:
+            return
+        if isinstance(value, datetime):
+            self._start_time = value
+        else:
+            self._start_time = datetime.strptime(value, '%Y-%m-%d %H:%M:%S')
 
     @property
     def duration(self):
@@ -82,7 +86,7 @@ class Event(object):
 
     @duration.setter
     def duration(self, value):
-        self._duration = int(value) if value else 0
+        self._duration = int(value) if value else None
 
     def commit(self):
         with self._manager.db as db:
@@ -137,10 +141,10 @@ class EventManager(object):
 
     def _pointers(self, cond, resource=None, follow=False):
         if not resource:
-            r = self.db_table.find(order_by='start_time')
+            r = self.db[self.db_table_name].find(order_by='start_time')
         else:
-            r = self.db_table.find(order_by='start_time',
-                                   resource=resource)
+            r = self.db[self.db_table_name].find(order_by='start_time',
+                                                 resource=resource)
         e = None
         l = None
         for e in r:
@@ -179,7 +183,7 @@ class EventManager(object):
         #     for result in r:
         #         print("Removing {0}".format(r))
         #         self.remove(result['eid'])
-        results = self.db_table.find(order_by='start_time')
+        results = self.db[self.db_table_name].find(order_by='start_time')
         for result in results:
             if result['start_time'] >= datetime.now():
                 break
@@ -187,7 +191,7 @@ class EventManager(object):
             self.remove(result['eid'])
 
     def render(self):
-        for result in self.db_table.find(order_by='start_time'):
+        for result in self.db[self.db_table_name].find(order_by='start_time'):
             print(Event(self, result['eid']))
 
     @property
@@ -195,16 +199,10 @@ class EventManager(object):
         return "events_{0}".format(self._emid)
 
     @property
-    def db_table(self):
-        return self.db.get_table(self.db_table_name)
-
-    @property
     def db(self):
         if self._db is None:
             self._db = dataset.connect(self.db_url)
             self._db.get_table(self.db_table_name)
-            # table.create_index(['start_time'])
-            # table.create_index(['resource'])
         return self._db
 
     @property
@@ -213,10 +211,7 @@ class EventManager(object):
 
     @property
     def db_dir(self):
-        if not self._db_dir:
-            self._db_dir = os.path.join(self._node.cache_dir, 'db')
-            os.makedirs(self._db_dir, exist_ok=True)
-        return self._db_dir
+        return self._node.db_dir
 
     @property
     def current_event(self):
@@ -284,7 +279,7 @@ class EventManager(object):
 
     def _fetch(self):
         self._node.log.info("Triggering Fetch")
-        for e in self.db_table.find(order_by='start_time'):
+        for e in self.db[self.db_table_name].find(order_by='start_time'):
             if e['start_time'] - datetime.now() > timedelta(seconds=1200):
                 break
             r = self._node.resource_manager.get(e['resource'])
@@ -298,7 +293,7 @@ class EventManager(object):
 
     def _prefetch(self):
         self._node.log.info("Triggering Prefetch")
-        for e in self.db_table.find(order_by='start_time'):
+        for e in self.db[self.db_table_name].find(order_by='start_time'):
             if e['start_time'] - datetime.now() > timedelta(seconds=(3600 * 6)):
                 break
             r = self._node.resource_manager.get(e['resource'])
@@ -314,9 +309,6 @@ class EventManager(object):
         self._fetch_scheduler()
         self._prefetch_scheduler()
         self._event_scheduler()
-
-    def restart(self):
-        pass
 
 
 class EventManagerMixin(BaseIoTNode):
@@ -342,9 +334,3 @@ class EventManagerMixin(BaseIoTNode):
             return [self.event_manager(WEBRESOURCE).current_event_resource]
         else:
             return []
-
-    def start(self):
-        super(EventManagerMixin, self).start()
-
-    def stop(self):
-        super(EventManagerMixin, self).stop()
