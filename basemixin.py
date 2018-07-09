@@ -1,5 +1,7 @@
 
 
+import os
+from appdirs import user_cache_dir
 from twisted.internet import reactor
 from .structure import BaseGuiStructureMixin
 
@@ -9,6 +11,7 @@ class BaseMixin(object):
 
     def __init__(self, *args, **kwargs):
         self._reactor = kwargs.pop('reactor', reactor)
+        self._cache_dir = None
         super(BaseMixin, self).__init__(*args, **kwargs)
 
     def start(self):
@@ -30,6 +33,13 @@ class BaseMixin(object):
     @property
     def appname(self):
         return self._appname
+
+    @property
+    def cache_dir(self):
+        if not self._cache_dir:
+            self._cache_dir = user_cache_dir(self.appname)
+            os.makedirs(self._cache_dir, exist_ok=True)
+        return self._cache_dir
 
 
 class BaseGuiMixin(BaseGuiStructureMixin):

@@ -81,8 +81,16 @@ class IoTNodeConfig(object):
         return self._config.get('http', 'client_provider', fallback='requests')
 
     @property
+    def http_max_concurrent_requests(self):
+        return self._config.getint('http', 'max_concurrent_requests', fallback=1)
+
+    @property
+    def http_max_background_downloads(self):
+        return self._config.getint('http', 'max_background_downloads', fallback=1)
+
+    @property
     def http_max_concurrent_downloads(self):
-        return self._config.getint('http', 'max_concurrent_download', fallback=1)
+        return self._config.getint('http', 'max_concurrent_downloads', fallback=1)
 
     # Resource Manager
     @property

@@ -69,6 +69,8 @@ class TreqHttpClientMixin(NodeBusyMixin, NodeLoggingMixin, BaseMixin):
     def __init__(self, *args, **kwargs):
         self._http_client = None
         self._http_semaphore = None
+        self._http_semaphore_background = None
+        self._http_semaphore_download = None
         super(TreqHttpClientMixin, self).__init__(*args, **kwargs)
 
     def http_get(self, url, **kwargs):
@@ -103,16 +105,18 @@ class TreqHttpClientMixin(NodeBusyMixin, NodeLoggingMixin, BaseMixin):
 
         return deferred_response
 
-    def http_download(self, url, dst, **kwargs):
-        deferred_response = self.http_semaphore.run(
+    def http_download(self, url, dst, semaphore=None, **kwargs):
+        if not semaphore:
+            semaphore = self.http_semaphore
+        deferred_response = semaphore.run(
             self._http_download, url, dst, **kwargs
         )
         return deferred_response
 
     def _http_download(self, url, dst, **kwargs):
         dst = os.path.abspath(dst)
-        self.log.debug("Starting download {url} to {destination}",
-                       url=url, destination=dst)
+        # self.log.debug("Starting download {url} to {destination}",
+        #                url=url, destination=dst)
         if os.path.isdir(dst):
             fname = os.path.basename(urlparse(url).path)
             dst = os.path.join(dst, fname)
@@ -210,10 +214,24 @@ class TreqHttpClientMixin(NodeBusyMixin, NodeLoggingMixin, BaseMixin):
     @property
     def http_semaphore(self):
         if self._http_semaphore is None:
-            n = self.config.http_max_concurrent_downloads
+            n = self.config.http_max_concurrent_requests
             self._http_semaphore = DeferredSemaphore(n)
             _ = self.http_client
         return self._http_semaphore
+
+    @property
+    def http_semaphore_background(self):
+        if self._http_semaphore_background is None:
+            n = self.config.http_max_background_downloads
+            self._http_semaphore_background = DeferredSemaphore(n)
+        return self._http_semaphore_background
+
+    @property
+    def http_semaphore_download(self):
+        if self._http_semaphore_download is None:
+            n = self.config.http_max_concurrent_downloads
+            self._http_semaphore_download = DeferredSemaphore(n)
+        return self._http_semaphore_download
 
     @property
     def http_client(self):

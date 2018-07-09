@@ -1,6 +1,7 @@
 
 
 import os
+from twisted.internet.defer import Deferred
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.video import Video
 from kivy.uix.image import Image
@@ -15,6 +16,7 @@ class MediaPlayerMixin(NodeLoggingMixin):
 
     def __init__(self, *args, **kwargs):
         super(MediaPlayerMixin, self).__init__(*args, **kwargs)
+        self._media_player_deferred = None
 
     def media_play(self, content, duration=None, loop=False):
         # Play the media file at filepath. If loop is true, restart the media
@@ -29,13 +31,15 @@ class MediaPlayerMixin(NodeLoggingMixin):
         if duration:
             self.reactor.callLater(duration, self.media_stop)
         if os.path.splitext(content)[1] in self._media_extentions_image:
-            self.log.info("Showing image {filename}",
-                          filename=os.path.basename(content))
+            # self.log.info("Showing image {filename}",
+            #               filename=os.path.basename(content))
             self._media_play_image(content)
         else:
-            self.log.info("Starting video {filename}",
-                          filename=os.path.basename(content))
+            # self.log.info("Starting video {filename}",
+            #               filename=os.path.basename(content))
             self._media_play_video(content, loop)
+        self._media_player_deferred = Deferred()
+        return self._media_player_deferred
 
     def _media_play_image(self, filepath):
         raise NotImplementedError
@@ -44,8 +48,8 @@ class MediaPlayerMixin(NodeLoggingMixin):
         raise NotImplementedError
 
     def media_stop(self):
-        self.log.info("Media play done")
-        pass
+        # self.log.info("Media play done")
+        self._media_player_deferred.callback(True)
 
 
 class MediaPlayerGuiMixin(OverlayWindowGuiMixin):
