@@ -21,10 +21,12 @@ class BaseApiEngineMixin(HttpClientMixin, NodeIDMixin):
     def api_token(self):
         raise NotImplementedError
 
+    def api_token_reset(self):
+        raise NotImplementedError
+
     """ Core API Executor """
     def _api_execute(self, ep, request_builder, response_handler):
         url = "{0}/{1}".format(self.api_url, ep)
-
         d = self.api_token
         d.addCallback(request_builder)
 
@@ -34,6 +36,8 @@ class BaseApiEngineMixin(HttpClientMixin, NodeIDMixin):
         d.addCallback(_get_response)
 
         def _error_handler(failure):
+            if failure.value.response.code == 403:
+                self.api_token_reset()
             if not self.api_reconnect_task.running:
                 self.api_engine_reconnect()
             return failure

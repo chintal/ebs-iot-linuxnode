@@ -313,10 +313,10 @@ class CachingResourceManager(ResourceManager):
         else:
             trimmer = self._cache_trimmer_fifo
         current_size = self.cache_size
-        # self._node.log.debug("Attempting to trim cache to {max_size} from "
-        #                      "{current_size} with {trimmer}",
-        #                      max_size=max_size, current_size=current_size,
-        #                      trimmer=trimmer.__name__)
+        self._node.log.debug("Attempting to trim cache to {max_size} from "
+                             "{current_size} with {trimmer}",
+                             max_size=max_size, current_size=current_size,
+                             trimmer=trimmer.__name__)
         while current_size > max_size:
             resources = list(self.cache_resources)
             try:
@@ -324,6 +324,7 @@ class CachingResourceManager(ResourceManager):
             except NothingToTrimError:
                 return False
             # TODO Yield none for cooperate (??)
+        self._node.log.debug("Cache trim complete.")
 
     @property
     def cache_resources(self):
