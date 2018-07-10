@@ -1,7 +1,9 @@
 
 from twisted.internet.task import LoopingCall
+from twisted.internet.defer import succeed
 
 from ..iotnode.http import HttpClientMixin
+from ..iotnode.http_utils import HTTPError
 from ..iotnode.nodeid import NodeIDMixin
 
 
@@ -36,7 +38,8 @@ class BaseApiEngineMixin(HttpClientMixin, NodeIDMixin):
         d.addCallback(_get_response)
 
         def _error_handler(failure):
-            if failure.value.response.code == 403:
+            if isinstance(failure.value, HTTPError) and \
+                    failure.value.response.code == 403:
                 self.api_token_reset()
             if not self.api_reconnect_task.running:
                 self.api_engine_reconnect()
@@ -44,11 +47,29 @@ class BaseApiEngineMixin(HttpClientMixin, NodeIDMixin):
         d.addCallbacks(response_handler, _error_handler)
         return d
 
-    """ API Connection Management """
+    """ API Task Management """
     @property
     def api_tasks(self):
         return self._api_tasks
 
+    def _api_start_all_tasks(self, _):
+        for task, period in self.api_tasks:
+            t = getattr(self, task)
+            if not t.running:
+                self.log.info("Starting {task} with period {period}",
+                              task=task, period=period)
+                t.start(period)
+        return succeed(True)
+
+    def _api_stop_all_tasks(self, _):
+        for task, _ in self._api_tasks:
+            t = getattr(self, task)
+            if t.running:
+                self.log.info("Stopping {task}", task=task)
+                t.stop()
+        return succeed(True)
+
+    """ API Connection Management """
     @property
     def api_reconnect_task(self):
         if self._api_reconnect_task is None:
@@ -65,18 +86,26 @@ class BaseApiEngineMixin(HttpClientMixin, NodeIDMixin):
             self._api_engine_active = True
             if self.api_reconnect_task.running:
                 self.api_reconnect_task.stop()
+
+        def _enter_reconnection_cycle(failure):
+            if not self.api_reconnect_task.running:
+                self.api_engine_reconnect()
+            return failure
+
         d.addCallbacks(
             _made_connection,
-            self._deferred_error_passthrough
+            _enter_reconnection_cycle
         )
 
-        for task, period in self.api_tasks:
-            d.addCallbacks(
-                lambda _: getattr(self, task).start(period),
-                self._deferred_error_passthrough
-            )
-
-        d.addErrback(self._deferred_error_swallow)
+        def _error_handler(failure):
+            if self.api_reconnect_task.running:
+                return
+            else:
+                return failure
+        d.addCallbacks(
+            self._api_start_all_tasks,
+            _error_handler
+        )
         return d
 
     def api_engine_reconnect(self):
@@ -84,10 +113,8 @@ class BaseApiEngineMixin(HttpClientMixin, NodeIDMixin):
             self.log.info("Lost connection to server. Attempting to reconnect.")
         self._api_engine_active = False
         if not self.api_reconnect_task.running:
+            self._api_stop_all_tasks(True)
             self.api_reconnect_task.start(self._api_reconnect_frequency)
-        for task, _ in self._api_tasks:
-            if getattr(self, task).running:
-                getattr(self, task).stop()
 
     def api_engine_stop(self):
         self._api_engine_active = False
