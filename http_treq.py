@@ -27,6 +27,7 @@ class NoResumeResponseError(Exception):
 
 class WatchfulBodyCollector(Protocol):
     def __init__(self, finished, collector, chunktimeout, reactor):
+        # TODO Reimplement with twisted.protocols.policies.TimeoutMixin
         self.latest_tick = 0
         self.chunktimeout = chunktimeout
         self.reactor = reactor

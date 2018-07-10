@@ -49,7 +49,8 @@ class MediaPlayerMixin(NodeLoggingMixin):
 
     def media_stop(self):
         # self.log.info("Media play done")
-        self._media_player_deferred.callback(True)
+        if self._media_player_deferred:
+            self._media_player_deferred.callback(True)
 
 
 class MediaPlayerGuiMixin(OverlayWindowGuiMixin):

@@ -24,7 +24,8 @@ class BaseGuiStructureMixin(object):
     def gui_anchor_bottom_right(self):
         if not self._gui_anchor_br:
             self._gui_anchor_br = AnchorLayout(anchor_x='right',
-                                               anchor_y='bottom')
+                                               anchor_y='bottom',
+                                               pos_hint={'pos': [0, 0]})
             self.gui_primary_root.add_widget(self._gui_anchor_br)
         return self._gui_anchor_br
 
@@ -32,7 +33,8 @@ class BaseGuiStructureMixin(object):
     def gui_anchor_bottom_left(self):
         if not self._gui_anchor_bl:
             self._gui_anchor_bl = AnchorLayout(anchor_x='left',
-                                               anchor_y='bottom')
+                                               anchor_y='bottom',
+                                               pos_hint={'pos': [0, 0]})
             self.gui_primary_root.add_widget(self._gui_anchor_bl)
         return self._gui_anchor_bl
 
@@ -40,7 +42,8 @@ class BaseGuiStructureMixin(object):
     def gui_anchor_top_right(self):
         if not self._gui_anchor_tr:
             self._gui_anchor_tr = AnchorLayout(anchor_x='right',
-                                               anchor_y='top')
+                                               anchor_y='top',
+                                               pos_hint={'pos': [0, 0]})
             self.gui_primary_root.add_widget(self._gui_anchor_tr)
         return self._gui_anchor_tr
 
@@ -78,11 +81,20 @@ class BaseGuiStructureMixin(object):
     @property
     def gui_footer(self):
         if not self._gui_footer:
-            self._gui_footer = BoxLayout(orientation='vertical')
-            self.gui_structure_root.add_widget(
-                self._gui_footer, index=len(self.gui_structure_root.children)
+            _ = self.gui_primary_root
+            self._gui_footer = BoxLayout(
+                orientation='vertical', size_hint=(1, None),
+                height=60, padding=['0sp', '0sp', '0sp', '8sp']
             )
         return self._gui_footer
+
+    def gui_footer_show(self):
+        if not self._gui_footer.parent:
+            self.gui_structure_root.add_widget(self._gui_footer)
+
+    def gui_footer_hide(self):
+        if self._gui_footer.parent:
+            self.gui_structure_root.remove_widget(self._gui_footer)
 
     @property
     def gui_structure_root(self):

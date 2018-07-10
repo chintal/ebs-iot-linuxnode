@@ -4,6 +4,7 @@ from .log import LoggingGuiMixin
 from .nodeid import NodeIDGuiMixin
 from .busy import BusySpinnerGuiMixin
 from .background import OverlayWindowGuiMixin
+from .marquee import MarqueeGuiMixin
 
 from .log import NodeLoggingMixin
 from .nodeid import NodeIDMixin
@@ -30,7 +31,7 @@ class BaseIoTNode(ResourceManagerMixin, HttpClientMixin,
 
 
 class BaseIoTNodeGui(NodeIDGuiMixin, BusySpinnerGuiMixin, LoggingGuiMixin,
-                     OverlayWindowGuiMixin, BaseIoTNode):
+                     MarqueeGuiMixin, OverlayWindowGuiMixin, BaseIoTNode):
 
     def __init__(self, *args, **kwargs):
         self._application = kwargs.pop('application')
