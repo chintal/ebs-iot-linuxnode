@@ -221,26 +221,14 @@ class EventManager(object):
     def current_event_resource(self):
         return self._current_event_resource
 
+    def _trigger_event(self, event):
+        raise NotImplementedError
+
     def _finish_event(self, _):
         self._node.log.debug("Successfully finished event {eid}",
                              eid=self._current_event)
         self._current_event = None
         self._current_event_resource = None
-
-    def _trigger_event(self, event):
-        if event.etype == WEBRESOURCE:
-            r = self._node.resource_manager.get(event.resource)
-            if r.available:
-                self._node.log.info("Executing Event : {0}".format(event))
-                d = self._node.media_play(content=r, duration=event.duration)
-                d.addCallback(self._finish_event)
-                self._current_event = event.eid
-                self._current_event_resource = event.resource
-            else:
-                self._node.log.warn("Media not ready for {event}",
-                                    event=event)
-        self.remove(event.eid)
-        self.prune()
 
     def _event_scheduler(self):
         event = None
@@ -277,6 +265,36 @@ class EventManager(object):
         return deferLater(self._node.reactor, next_start.seconds,
                           self._event_scheduler)
 
+    def start(self):
+        self._event_scheduler()
+
+
+class TextEventManager(EventManager):
+    def _trigger_event(self, event):
+        self._node.log.info("Executing Event : {0}".format(event))
+        d = self._node.marquee_play(text=event.resource, duration=event.duration)
+        d.addCallback(self._finish_event)
+        self._current_event = event.eid
+        self._current_event_resource = event.resource
+        self.remove(event.eid)
+        self.prune()
+
+
+class WebResourceEventManager(EventManager):
+    def _trigger_event(self, event):
+        r = self._node.resource_manager.get(event.resource)
+        if r.available:
+            self._node.log.info("Executing Event : {0}".format(event))
+            d = self._node.media_play(content=r, duration=event.duration)
+            d.addCallback(self._finish_event)
+            self._current_event = event.eid
+            self._current_event_resource = event.resource
+        else:
+            self._node.log.warn("Media not ready for {event}",
+                                event=event)
+        self.remove(event.eid)
+        self.prune()
+
     def _fetch(self):
         self._node.log.info("Triggering Fetch")
         for e in self.db[self.db_table_name].find(order_by='start_time'):
@@ -306,18 +324,12 @@ class EventManager(object):
         self._prefetch()
 
     def start(self):
+        super(WebResourceEventManager, self).start()
         self._fetch_scheduler()
         self._prefetch_scheduler()
-        self._event_scheduler()
 
 
 class EventManagerMixin(BaseIoTNode):
-    _event_manager_tasks = [
-        '_event_prefetch_task',
-        '_event_execute_task',
-        '_event_report_task'
-    ]
-
     def __init__(self, *args, **kwargs):
         self._event_managers = {}
         super(EventManagerMixin, self).__init__(*args, **kwargs)
@@ -325,7 +337,12 @@ class EventManagerMixin(BaseIoTNode):
     def event_manager(self, emid):
         if emid not in self._event_managers.keys():
             self.log.info("Initializing event manager {emid}", emid=emid)
-            self._event_managers[emid] = EventManager(self, emid)
+            if emid == WEBRESOURCE:
+                self._event_managers[emid] = WebResourceEventManager(self, emid)
+            elif emid == TEXT:
+                self._event_managers[emid] = TextEventManager(self, emid)
+            else:
+                self._event_managers[emid] = EventManager(self, emid)
         return self._event_managers[emid]
 
     @property
