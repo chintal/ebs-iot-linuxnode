@@ -1,23 +1,55 @@
 
 
 import os
-import dataset
 from datetime import datetime
 from datetime import timedelta
 from cached_property import threaded_cached_property_with_ttl
 from six.moves.urllib.parse import urlparse
 from twisted.internet.task import deferLater
 
+from sqlalchemy import Column
+from sqlalchemy import Integer
+from sqlalchemy import Text
+from sqlalchemy import DateTime
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm.exc import NoResultFound
+
 from .basenode import BaseIoTNode
 from .resources import CacheableResource
 
+
+Base = declarative_base()
+metadata = Base.metadata
 
 WEBRESOURCE = 1
 TEXT = 2
 
 
-class ScheduledResourceClass(CacheableResource):
+class WebResourceEventsModel(Base):
+    __tablename__ = 'events_1'
 
+    id = Column(Integer, primary_key=True)
+    eid = Column(Text, index=True)
+    etype = Column(Integer)
+    resource = Column(Text)
+    start_time = Column(DateTime)
+    duration = Column(Text)
+
+
+class TextEventsModel(Base):
+    __tablename__ = 'events_2'
+
+    id = Column(Integer, primary_key=True)
+    eid = Column(Text, index=True)
+    etype = Column(Integer)
+    resource = Column(Text)
+    start_time = Column(DateTime)
+    duration = Column(Integer)
+
+
+class ScheduledResourceClass(CacheableResource):
     @threaded_cached_property_with_ttl(ttl=3)
     def next_use(self):
         return self.node.event_manager(WEBRESOURCE).next(
@@ -92,29 +124,45 @@ class Event(object):
         self._duration = int(value) if value else None
 
     def commit(self):
-        with self._manager.db as db:
-            db[self.tname].upsert(
-                row={'eid': self._eid,
-                     'etype': self._etype,
-                     'resource': self._resource,
-                     'start_time': self._start_time,
-                     'duration': self._duration},
-                keys=['eid']
-            )
+        session = self._manager.db()
+        try:
+            try:
+                eobj = session.query(self._db_model).filter_by(eid=self.eid).one()
+            except NoResultFound:
+                eobj = self._db_model()
+                eobj.eid = self.eid
+
+            eobj.etype = self._etype
+            eobj.resource = self.resource
+            eobj.start_time = self.start_time
+            eobj.duration = self.duration
+
+            session.add(eobj)
+            session.flush()
+            session.commit()
+        except:
+            session.rollback()
+            raise
+        finally:
+            session.close()
 
     def load(self):
-        with self._manager.db as db:
-            data = db[self.tname].find_one(eid=self._eid)
-            if not data:
-                return
-            self.etype = data['etype']
-            self.resource = data['resource']
-            self._start_time = data['start_time']
-            self.duration = data['duration']
+        session = self._manager.db()
+        try:
+            eobj = session.query(self._db_model).filter_by(eid=self._eid).one()
+            self.etype = eobj.etype
+            self.resource = eobj.resource
+            self._start_time = eobj.start_time
+            self.duration = eobj.duration
+        except:
+            session.rollback()
+            raise
+        finally:
+            session.close()
 
     @property
-    def tname(self):
-        return self._manager.db_table_name
+    def _db_model(self):
+        return self._manager.db_model
 
     def __repr__(self):
         return "{0:3} {2} {3:.2f} {1}".format(
@@ -127,6 +175,7 @@ class EventManager(object):
     def __init__(self, node, emid):
         self._emid = emid
         self._node = node
+        self._db_engine = None
         self._db = None
         self._db_dir = None
         self._execute_task = None
@@ -139,15 +188,32 @@ class EventManager(object):
         event.commit()
 
     def remove(self, eid):
-        with self.db as db:
-            db[self.db_table_name].delete(eid=eid)
+        session = self.db()
+        try:
+            try:
+                eobj = session.query(self.db_model).filter_by(eid=eid).one()
+            except NoResultFound:
+                return
+
+            session.delete(eobj)
+            session.flush()
+            session.commit()
+        except:
+            session.rollback()
+            raise
+        finally:
+            session.close()
 
     def _pointers(self, cond, resource=None, follow=False):
-        if not resource:
-            r = self.db[self.db_table_name].find(order_by='start_time')
-        else:
-            r = self.db[self.db_table_name].find(order_by='start_time',
-                                                 resource=resource)
+        session = self.db()
+        try:
+            r = self.db_get_events(session, resource=resource).all()
+        except:
+            session.rollback()
+            raise
+        finally:
+            session.close()
+
         e = None
         l = None
         for e in r:
@@ -156,23 +222,23 @@ class EventManager(object):
             l = e
         if l:
             if not follow:
-                return Event(self, l['eid'])
+                return Event(self, l.eid)
             else:
                 if e:
-                    ne = Event(self, e['eid'])
+                    ne = Event(self, e.eid)
                 else:
                     ne = None
-                return Event(self, l['eid']), ne
+                return Event(self, l.eid), ne
 
     def previous(self, resource=None, follow=False):
         return self._pointers(
-            lambda l, e: e['start_time'] >= datetime.now(),
+            lambda l, e: e.start_time >= datetime.now(),
             resource=resource, follow=follow
         )
 
     def next(self, resource=None, follow=False):
         return self._pointers(
-            lambda l, e: l['start_time'] >= datetime.now(),
+            lambda l, e: l.start_time >= datetime.now(),
             resource=resource, follow=follow
         )
 
@@ -186,26 +252,56 @@ class EventManager(object):
         #     for result in r:
         #         print("Removing {0}".format(r))
         #         self.remove(result['eid'])
-        results = self.db[self.db_table_name].find(order_by='start_time')
+        session = self.db()
+        try:
+            results = self.db_get_events(session).all()
+        except:
+            session.rollback()
+            raise
+        finally:
+            session.close()
+
         for result in results:
-            if result['start_time'] >= datetime.now():
+            if result.start_time >= datetime.now():
                 break
             self._node.log.warn("Pruning missed event {event}", event=result)
-            self.remove(result['eid'])
+            self.remove(result.eid)
 
     def render(self):
-        for result in self.db[self.db_table_name].find(order_by='start_time'):
-            print(Event(self, result['eid']))
+        session = self.db()
+        try:
+            results = self.db_get_events(session).all()
+        except:
+            session.rollback()
+            raise
+        finally:
+            session.close()
+        for result in results:
+            print(Event(self, result.eid))
+
+    def db_get_events(self, session, resource=None):
+        q = session.query(self.db_model)
+        if resource:
+            q = q.filter(
+                self.db_model.resource == resource
+            )
+        q = q.order_by(self.db_model.start_time)
+        return q
 
     @property
-    def db_table_name(self):
-        return "events_{0}".format(self._emid)
+    def db_model(self):
+        if self._emid == WEBRESOURCE:
+            return WebResourceEventsModel
+        elif self._emid == TEXT:
+            return TextEventsModel
 
     @property
     def db(self):
         if self._db is None:
-            self._db = dataset.connect(self.db_url)
-            self._db.get_table(self.db_table_name)
+            self._db_engine = create_engine(self.db_url)
+            metadata.create_all(self._db_engine)
+            self._db = sessionmaker(expire_on_commit=False)
+            self._db.configure(bind=self._db_engine)
         return self._db
 
     @property
@@ -300,10 +396,18 @@ class WebResourceEventManager(EventManager):
 
     def _fetch(self):
         self._node.log.info("Triggering Fetch")
-        for e in self.db[self.db_table_name].find(order_by='start_time'):
-            if e['start_time'] - datetime.now() > timedelta(seconds=1200):
+        session = self.db()
+        try:
+            results = self.db_get_events(session).all()
+        except:
+            session.rollback()
+            raise
+        finally:
+            session.close()
+        for e in results:
+            if e.start_time - datetime.now() > timedelta(seconds=1200):
                 break
-            r = self._node.resource_manager.get(e['resource'])
+            r = self._node.resource_manager.get(e.resource)
             self._node.resource_manager.prefetch(
                 r, semaphore=self._node.http_semaphore_download
             )
@@ -314,10 +418,18 @@ class WebResourceEventManager(EventManager):
 
     def _prefetch(self):
         self._node.log.info("Triggering Prefetch")
-        for e in self.db[self.db_table_name].find(order_by='start_time'):
-            if e['start_time'] - datetime.now() > timedelta(seconds=(3600 * 6)):
+        session = self.db()
+        try:
+            results = self.db_get_events(session).all()
+        except:
+            session.rollback()
+            raise
+        finally:
+            session.close()
+        for e in results:
+            if e.start_time - datetime.now() > timedelta(seconds=(3600 * 6)):
                 break
-            r = self._node.resource_manager.get(e['resource'])
+            r = self._node.resource_manager.get(e.resource)
             self._node.resource_manager.prefetch(
                 r, semaphore=self._node.http_semaphore_background
             )

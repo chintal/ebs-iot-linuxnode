@@ -2,19 +2,38 @@
 
 import os
 import time
-import dataset
 from datetime import datetime
 from datetime import timedelta
 from functools import partial
 from twisted.internet.defer import succeed
 from twisted.internet.task import cooperate
 from twisted.web.client import ResponseFailed
+from sqlalchemy import Column
+from sqlalchemy import Integer
+from sqlalchemy import Text
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm.exc import NoResultFound
 
 from .http import HttpClientMixin
 from .http_utils import _http_errors
 
 ASSET = 1
 CONTENT = 2
+
+
+Base = declarative_base()
+metadata = Base.metadata
+
+
+class ResourceModel(Base):
+    __tablename__ = 'resources'
+
+    id = Column(Integer, primary_key=True)
+    filename = Column(Text, index=True)
+    url = Column(Text)
+    rtype = Column(Integer)
 
 
 class CacheableResource(object):
@@ -75,21 +94,37 @@ class CacheableResource(object):
             return False
 
     def commit(self):
-        with self._manager.db as db:
-            db['resources'].upsert(
-                row={'filename': self.filename,
-                     'url': self.url,
-                     'rtype': self.rtype},
-                keys=['filename']
-            )
+        session = self._manager.db()
+        try:
+            try:
+                robj = session.query(ResourceModel).filter_by(filename=self.filename).one()
+            except NoResultFound:
+                robj = ResourceModel()
+                robj.filename = self.filename
+
+            robj.url = self.url
+            robj.rtype = self.rtype
+
+            session.add(robj)
+            session.flush()
+            session.commit()
+        except:
+            session.rollback()
+            raise
+        finally:
+            session.close()
 
     def load(self):
-        with self._manager.db as db:
-            data = db['resources'].find_one(filename=self.filename)
-            if not data:
-                return
-            self._url = data['url']
-            self._rtype = data['rtype']
+        session = self._manager.db()
+        try:
+            robj = session.query(ResourceModel).filter_by(filename=self.filename).one()
+            self._url = robj.url
+            self._rtype = robj.rtype
+        except:
+            session.rollback()
+            raise
+        finally:
+            session.close()
 
     @property
     def node(self):
@@ -104,6 +139,7 @@ class ResourceManager(object):
         self._resource_class = kwargs.pop('resource_class', CacheableResource)
         self._node = node
         self._db = None
+        self._db_engine = None
         self._db_dir = None
         self._cache_dir = None
         self._active_downloads = []
@@ -116,12 +152,17 @@ class ResourceManager(object):
     def has(self, filename):
         # Check if a resource is in defined by the manager.
         # This makes no guarantees about it existing in the cache.
-        with self.db as db:
-            data = db['resources'].find_one(filename=filename)
-            if not data:
-                return False
-            else:
-                return True
+        session = self.db()
+        try:
+            _ = session.query(ResourceModel).filter_by(filename=filename).one()
+            return True
+        except NoResultFound:
+            return False
+        except:
+            session.rollback()
+            raise
+        finally:
+            session.close()
 
     def get(self, filename):
         # Get the resource object bound to the manager.
@@ -164,8 +205,8 @@ class ResourceManager(object):
 
     def _fetch(self, resource, semaphore=None):
         self._active_downloads.append(resource.filename)
-        # self._node.log.debug("Requesting download of {filename}",
-        #                      filename=resource.filename)
+        self._node.log.debug("Requesting download of {filename}",
+                             filename=resource.filename)
         d = self._node.http_download(resource.url, resource.cache_path,
                                      semaphore=semaphore)
 
@@ -188,8 +229,10 @@ class ResourceManager(object):
     @property
     def db(self):
         if self._db is None:
-            self._db = dataset.connect(self.db_url)
-            self._db.get_table('resources')
+            self._db_engine = create_engine(self.db_url)
+            metadata.create_all(self._db_engine)
+            self._db = sessionmaker(expire_on_commit=False)
+            self._db.configure(bind=self._db_engine)
         return self._db
 
     @property
@@ -229,7 +272,8 @@ class CachingResourceManager(ResourceManager):
                 td = task.whenDone()
 
                 def _report_done(_):
-                    self._node.log.debug("Cache trim complete.")
+                    # self._node.log.debug("Cache trim complete.")
+                    pass
                 td.addCallback(_report_done)
             d.addCallback(fetch_postprocess)
         else:
@@ -322,17 +366,20 @@ class CachingResourceManager(ResourceManager):
         else:
             trimmer = self._cache_trimmer_fifo
         current_size = self.cache_size
-        self._node.log.debug("Attempting to trim cache to {max_size} from "
-                             "{current_size} with {trimmer}",
-                             max_size=max_size, current_size=current_size,
-                             trimmer=trimmer.__name__)
-        while current_size > max_size:
-            resources = list(self.cache_resources)
-            try:
-                current_size -= self._cache_trimmer(resources, trimmer)
-            except NothingToTrimError:
-                break
-            yield None
+        # self._node.log.debug("Attempting to trim cache to {max_size} from "
+        #                      "{current_size} with {trimmer}",
+        #                      max_size=max_size, current_size=current_size,
+        #                      trimmer=trimmer.__name__)
+        if current_size > max_size:
+            r = list(self.cache_resources)
+            resources = [(x, x.next_use) for x in r]
+            while current_size > max_size:
+                try:
+                    resources, rv = self._cache_trimmer(resources, trimmer)
+                    current_size -= rv
+                except NothingToTrimError:
+                    break
+                yield None
 
     @property
     def cache_resources(self):
@@ -346,59 +393,66 @@ class CachingResourceManager(ResourceManager):
             resource = self.get(filename)
             yield resource
 
+    def _cache_cremove(self, resources, r):
+        resources.remove(r)
+        return resources, self.cache_remove(r[0].filename)
+
     def _cache_trimmer(self, resources, trimfunc):
         # TODO Check about dangling temporary files.
-        for resource in resources:
-            if resource.is_orphaned:
-                return self.cache_remove(resource.filename)
-        return trimfunc([x for x in resources if x.is_content])
+        for r in resources:
+            if r[0].is_orphaned:
+                return self._cache_cremove(resources, r)
+        return trimfunc([x for x in resources if x[0].is_content])
 
     def _cache_trimmer_fifo(self, resources):
-        r = sorted(resources, key=lambda x: os.path.getmtime(x.cache_path))
+        r = sorted(resources, key=lambda x: os.path.getmtime(x[0].cache_path))
         # self._cache_debug(r, 'by mtime',
         #                   lambda x: os.path.getmtime(x.cache_path))
         if len(r):
-            return self.cache_remove(r[0].filename)
+            return self._cache_cremove(resources, r[0])
         else:
             raise NothingToTrimError()
 
     def _cache_trimmer_lru(self, resources):
-        r = sorted(resources, key=lambda x: x.last_use)
+        r = sorted(resources, key=lambda x: x[1])
         # self._cache_debug(r, 'by last_use', lambda x: x.last_use)
         if len(r):
-            return self.cache_remove(r[0].filename)
+            return self._cache_cremove(resources, r[0])
         else:
             raise NothingToTrimError()
 
     def _cache_trimmer_predictive(self, resources):
         # No next_use
-        r = [x for x in resources if not x.next_use]
+        r = [x for x in resources if not x[1]]
         # self._cache_debug(r, 'by no next_use', lambda x: x.next_use)
         if len(r):
             # self.node.log.debug("NO NEXT USE")
             return self._cache_trimmer_fifo(r)
 
         # Next_use, next_use in the past
-        r = sorted((x for x in resources if x.next_use < datetime.now()),
-                   key=lambda x: x.next_use)
+        cutoff = datetime.now()
+        r = sorted((x for x in resources if x[1] < cutoff),
+                   key=lambda x: x[1])
         # self._cache_debug(r, 'by next_use in past', lambda x: x.next_use)
         if len(r):
-            return self.cache_remove(r[0].filename)
+            # self.node.log.debug('NEXT USE IN PAST')
+            return self._cache_cremove(resources, r[0])
 
         # Next_use, next_use in the future
-        cutoff = datetime.now() + timedelta(minutes=20)
-        r = sorted((x for x in resources if x.next_use > cutoff),
-                   key=lambda x: x.next_use, reverse=True)
+        cutoff += timedelta(minutes=20)
+        r = sorted((x for x in resources if x[1] > cutoff),
+                   key=lambda x: x[1], reverse=True)
         # self._cache_debug(r, 'by next_use in future', lambda x: x.next_use)
         if len(r):
-            return self.cache_remove(r[0].filename)
+            # self.node.log.debug('NEXT USE IN FUTURE')
+            return self._cache_cremove(resources, r[0])
 
         raise NothingToTrimError()
 
     def _cache_debug(self, resources, title, keyfunc):
         self._node.log.debug("------------------------------------")
         self._node.log.debug("Cache Content {0}".format(title))
-        for r in resources:
+        for r, _ in resources:
             self._node.log.debug(
                 "{key} {filename}",
                 filename=r.filename,
