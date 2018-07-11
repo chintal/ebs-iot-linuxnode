@@ -7,11 +7,11 @@ from datetime import datetime
 from datetime import timedelta
 from functools import partial
 from twisted.internet.defer import succeed
+from twisted.internet.task import cooperate
 from twisted.web.client import ResponseFailed
 
 from .http import HttpClientMixin
 from .http_utils import _http_errors
-
 
 ASSET = 1
 CONTENT = 2
@@ -23,6 +23,7 @@ class CacheableResource(object):
         self._filename = filename
         self._url = url
         self._rtype = rtype
+        self._cache_path = None
         if not self._rtype:
             self.load()
 
@@ -40,7 +41,9 @@ class CacheableResource(object):
 
     @property
     def cache_path(self):
-        return self._manager.cache_path(self.filename)
+        if not self._cache_path:
+            self._cache_path = self._manager.cache_path(self.filename)
+        return self._cache_path
 
     @property
     def filepath(self):
@@ -48,7 +51,7 @@ class CacheableResource(object):
 
     @property
     def available(self):
-        return self._manager.cache_has(self.filename)
+        return os.path.exists(self.cache_path)
 
     @property
     def is_asset(self):
@@ -220,7 +223,14 @@ class CachingResourceManager(ResourceManager):
         )
         if d:
             def fetch_postprocess(_):
-                self.cache_trim()
+                task = cooperate(
+                    self.cache_trim()
+                )
+                td = task.whenDone()
+
+                def _report_done(_):
+                    self._node.log.debug("Cache trim complete.")
+                td.addCallback(_report_done)
             d.addCallback(fetch_postprocess)
         else:
             d = succeed(True)
@@ -302,7 +312,6 @@ class CachingResourceManager(ResourceManager):
         #  - Remove cached content items with 'next_use' most in the future,
         #    up to about 30 minutes from the current time
         #
-        # TODO This should maybe return a deferred
         if max_size is None:
             max_size = self.cache_max_size
         max_size = max_size - space_for
@@ -322,9 +331,8 @@ class CachingResourceManager(ResourceManager):
             try:
                 current_size -= self._cache_trimmer(resources, trimmer)
             except NothingToTrimError:
-                return False
-            # TODO Yield none for cooperate (??)
-        self._node.log.debug("Cache trim complete.")
+                break
+            yield None
 
     @property
     def cache_resources(self):
@@ -378,8 +386,8 @@ class CachingResourceManager(ResourceManager):
             return self.cache_remove(r[0].filename)
 
         # Next_use, next_use in the future
-        r = sorted((x for x in resources
-                    if x.next_use > datetime.now() + timedelta(minutes=20)),
+        cutoff = datetime.now() + timedelta(minutes=20)
+        r = sorted((x for x in resources if x.next_use > cutoff),
                    key=lambda x: x.next_use, reverse=True)
         # self._cache_debug(r, 'by next_use in future', lambda x: x.next_use)
         if len(r):

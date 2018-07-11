@@ -4,8 +4,10 @@ import os
 import dataset
 from datetime import datetime
 from datetime import timedelta
+from cached_property import threaded_cached_property_with_ttl
 from six.moves.urllib.parse import urlparse
 from twisted.internet.task import deferLater
+
 from .basenode import BaseIoTNode
 from .resources import CacheableResource
 
@@ -15,7 +17,8 @@ TEXT = 2
 
 
 class ScheduledResourceClass(CacheableResource):
-    @property
+
+    @threaded_cached_property_with_ttl(ttl=3)
     def next_use(self):
         return self.node.event_manager(WEBRESOURCE).next(
             resource=self.filename
