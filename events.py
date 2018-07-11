@@ -52,9 +52,12 @@ class TextEventsModel(Base):
 class ScheduledResourceClass(CacheableResource):
     @threaded_cached_property_with_ttl(ttl=3)
     def next_use(self):
-        return self.node.event_manager(WEBRESOURCE).next(
-            resource=self.filename
-        ).start_time
+        next_event = self.node.event_manager(WEBRESOURCE).next(
+            resource=self.filename)
+        if next_event:
+            return next_event.start_time
+        else:
+            return None
 
 
 class Event(object):
@@ -384,10 +387,15 @@ class WebResourceEventManager(EventManager):
         r = self._node.resource_manager.get(event.resource)
         if r.available:
             self._node.log.info("Executing Event : {0}".format(event))
-            d = self._node.media_play(content=r, duration=event.duration)
-            d.addCallback(self._finish_event)
-            self._current_event = event.eid
-            self._current_event_resource = event.resource
+            try:
+                d = self._node.media_play(content=r,
+                                          duration=event.duration)
+                d.addCallback(self._finish_event)
+                self._current_event = event.eid
+                self._current_event_resource = event.resource
+            except:
+                self._node.log.warn("Unspecified Error trying to play "
+                                    "media for {event}", event=event)
         else:
             self._node.log.warn("Media not ready for {event}",
                                 event=event)

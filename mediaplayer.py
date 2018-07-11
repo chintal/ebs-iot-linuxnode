@@ -17,11 +17,15 @@ class MediaPlayerMixin(NodeLoggingMixin):
     def __init__(self, *args, **kwargs):
         super(MediaPlayerMixin, self).__init__(*args, **kwargs)
         self._media_player_deferred = None
+        self._end_call = None
 
     def media_play(self, content, duration=None, loop=False):
         # Play the media file at filepath. If loop is true, restart the media
         # when it's done. You probably would want to provide a duration with
         # an image or with a looping video, not otherwise.
+        if self._media_player_deferred:
+            # TODO This needs to be much more robust
+            raise Exception
         if hasattr(content, 'filepath'):
             content = content.filepath
         if not os.path.exists(content):
@@ -29,7 +33,7 @@ class MediaPlayerMixin(NodeLoggingMixin):
                           filepath=content)
             return
         if duration:
-            self.reactor.callLater(duration, self.media_stop)
+            self._end_call = self.reactor.callLater(duration, self.media_stop)
         if os.path.splitext(content)[1] in self._media_extentions_image:
             # self.log.info("Showing image {filename}",
             #               filename=os.path.basename(content))
@@ -51,6 +55,7 @@ class MediaPlayerMixin(NodeLoggingMixin):
         # self.log.info("Media play done")
         if self._media_player_deferred:
             self._media_player_deferred.callback(True)
+            self._media_player_deferred = None
 
 
 class MediaPlayerGuiMixin(OverlayWindowGuiMixin):
