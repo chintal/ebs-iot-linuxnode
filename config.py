@@ -64,7 +64,7 @@ class IoTNodeConfig(object):
 
     def _apply_display_layer(self):
         if self.platform == 'rpi':
-            os.environ.setdefault('KIVY_BCM_DISPMANX_LAYER', self.app_dispmanx_layer)
+            os.environ.setdefault('KIVY_BCM_DISPMANX_LAYER', str(self.app_dispmanx_layer))
 
     # ID
     @property
