@@ -34,6 +34,10 @@ class IoTNodeConfig(object):
     def gui_log_display(self):
         return self._config.getboolean('debug', 'gui_log_display', fallback=False)
 
+    @property
+    def gui_log_level(self):
+        return self._config.getboolean('debug', 'gui_log_level', fallback='info')
+
     # Display
     @property
     def fullscreen(self):
