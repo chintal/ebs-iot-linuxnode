@@ -90,7 +90,7 @@ class LoggingGuiMixin(ConfigMixin, BaseGuiMixin):
     def gui_log_observer(self, event):
         ll = event['log_level'].name
         if ll in self._level_ignore_map[self.config.gui_log_level]:
-                return
+            return
         msg = "[font=RobotoMono-Regular][{0:^8}][/font] {1} {2}".format(
             ll.upper(),
             datetime.fromtimestamp(event['log_time']).strftime("%d%m %H:%M:%S"),

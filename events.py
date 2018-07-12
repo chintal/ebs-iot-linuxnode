@@ -37,6 +37,12 @@ class WebResourceEventsModel(Base):
     resource = Column(Text, index=True)
     start_time = Column(DateTime, index=True)
     duration = Column(Text)
+    
+    def __repr__(self):
+        return "{0:3} {2} {3:.2f} {1}".format(
+            self.eid, self.resource, self.etype,
+            (self.start_time - datetime.now()).total_seconds()
+        )
 
 
 class TextEventsModel(Base):
@@ -48,6 +54,12 @@ class TextEventsModel(Base):
     resource = Column(Text)
     start_time = Column(DateTime, index=True)
     duration = Column(Integer)
+    
+    def __repr__(self):
+        return "{0:3} {2} {3:.2f} {1}".format(
+            self.eid, self.resource, self.etype,
+            (self.start_time - datetime.now()).total_seconds()
+        )
 
 
 class ScheduledResourceClass(CacheableResource):
@@ -347,7 +359,8 @@ class EventManager(object):
         le, ne = self.previous(follow=True)
         if le:
             ltd = datetime.now() - le.start_time
-            # self._node.log.debug("S LTD {ltd}", ltd=ltd)
+            #self._node.log.debug("S {emid} LTD {ltd}", 
+            #                     ltd=ltd, emid=self._emid)
             if abs(ltd) < timedelta(seconds=5):
                 event = le
                 nevent = ne
@@ -355,7 +368,8 @@ class EventManager(object):
             ne, nne = self.next(follow=True)
             if ne:
                 ntd = ne.start_time - datetime.now()
-                # self._node.log.debug("S NTD {ntd}", ntd=ntd)
+                self._node.log.debug("S {emid} NTD {ntd}", 
+                                     ntd=ntd, emid=self._emid)
                 if abs(ntd) < timedelta(seconds=3):
                     event = ne
                     nevent = nne

@@ -36,7 +36,7 @@ class IoTNodeConfig(object):
 
     @property
     def gui_log_level(self):
-        return self._config.getboolean('debug', 'gui_log_level', fallback='info')
+        return self._config.get('debug', 'gui_log_level', fallback='info')
 
     # Display
     @property
