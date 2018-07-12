@@ -33,8 +33,8 @@ class WebResourceEventsModel(Base):
     id = Column(Integer, primary_key=True)
     eid = Column(Text, index=True)
     etype = Column(Integer)
-    resource = Column(Text)
-    start_time = Column(DateTime)
+    resource = Column(Text, index=True)
+    start_time = Column(DateTime, index=True)
     duration = Column(Text)
 
 
@@ -45,7 +45,7 @@ class TextEventsModel(Base):
     eid = Column(Text, index=True)
     etype = Column(Integer)
     resource = Column(Text)
-    start_time = Column(DateTime)
+    start_time = Column(DateTime, index=True)
     duration = Column(Integer)
 
 
@@ -232,6 +232,10 @@ class EventManager(object):
                 else:
                     ne = None
                 return Event(self, l.eid), ne
+        if follow:
+            return None, None
+        else:
+            return None
 
     def previous(self, resource=None, follow=False):
         return self._pointers(
@@ -329,8 +333,12 @@ class EventManager(object):
     def _finish_event(self, _):
         self._node.log.debug("Successfully finished event {eid}",
                              eid=self._current_event)
+        self._succeed_event(self._current_event)
         self._current_event = None
         self._current_event_resource = None
+
+    def _succeed_event(self, event):
+        raise NotImplementedError
 
     def _event_scheduler(self):
         event = None
@@ -363,23 +371,30 @@ class EventManager(object):
             next_start = next_event.start_time - datetime.now()
             if next_start > timedelta(seconds=60):
                 next_start = timedelta(seconds=60)
-        # self._node.log.debug("SCHED HOP {ns}", ns=next_start.seconds)
+        self._node.log.debug("SCHED {emid} HOP {ns}", emid=self._emid,
+                             ns=next_start.seconds)
         return deferLater(self._node.reactor, next_start.seconds,
                           self._event_scheduler)
 
     def start(self):
+        self._node.log.info("Starting Event Manager {emid} of {name}",
+                            emid=self._emid, name=self.__class__.__name__)
         self._event_scheduler()
 
 
 class TextEventManager(EventManager):
     def _trigger_event(self, event):
         self._node.log.info("Executing Event : {0}".format(event))
-        d = self._node.marquee_play(text=event.resource, duration=event.duration)
+        d = self._node.marquee_play(text=event.resource,
+                                    duration=event.duration)
         d.addCallback(self._finish_event)
         self._current_event = event.eid
         self._current_event_resource = event.resource
         self.remove(event.eid)
         self.prune()
+
+    def _succeed_event(self, event):
+        self._node.api_text_success([event])
 
 
 class WebResourceEventManager(EventManager):
@@ -401,6 +416,9 @@ class WebResourceEventManager(EventManager):
                                 event=event)
         self.remove(event.eid)
         self.prune()
+
+    def _succeed_event(self, event):
+        self._node.api_media_success([event])
 
     def _fetch(self):
         self._node.log.info("Triggering Fetch")
@@ -474,3 +492,9 @@ class EventManagerMixin(BaseIoTNode):
             return [self.event_manager(WEBRESOURCE).current_event_resource]
         else:
             return []
+
+    def api_media_success(self, events):
+        raise NotImplementedError
+
+    def api_text_success(self, events):
+        raise NotImplementedError
