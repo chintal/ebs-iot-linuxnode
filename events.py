@@ -394,7 +394,10 @@ class TextEventManager(EventManager):
         self.prune()
 
     def _succeed_event(self, event):
-        self._node.api_text_success([event])
+        try:
+            self._node.api_text_success([event])
+        except NotImplementedError:
+            self._node.log.debug("Node has no text event success reporter")
 
 
 class WebResourceEventManager(EventManager):
@@ -418,7 +421,10 @@ class WebResourceEventManager(EventManager):
         self.prune()
 
     def _succeed_event(self, event):
-        self._node.api_media_success([event])
+        try:
+            self._node.api_media_success([event])
+        except NotImplementedError:
+            self._node.log.debug("Node has no media event success reporter")
 
     def _fetch(self):
         self._node.log.info("Triggering Fetch")
