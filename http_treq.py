@@ -13,6 +13,7 @@ from .log import NodeLoggingMixin
 from .busy import NodeBusyMixin
 from .http_utils import HTTPError
 from twisted.internet.error import DNSLookupError
+from twisted.web.client import ResponseNeverReceived
 
 from twisted.internet.protocol import Protocol
 from twisted.web.client import ResponseDone
@@ -192,7 +193,7 @@ class TreqHttpClientMixin(NodeBusyMixin, NodeLoggingMixin, BaseMixin):
         return d
 
     def _http_error_handler(self, failure, url=None):
-        failure.trap(HTTPError, DNSLookupError)
+        failure.trap(HTTPError, DNSLookupError, ResponseNeverReceived)
         if isinstance(failure.value, HTTPError):
             self.log.warn(
                 "Encountered error {e} while trying to {method} {url}",
@@ -203,6 +204,11 @@ class TreqHttpClientMixin(NodeBusyMixin, NodeLoggingMixin, BaseMixin):
             self.log.warn(
                 "Got a DNS lookup error for {url}. Check your URL and "
                 "internet connection.", url=url
+            )
+        if isinstance(failure.value, ResponseNeverReceived):
+            self.log.warn(
+                "Response never received for {url}. Underlying error is {e}",
+                url=url, e=failure.value.reasons
             )
         return failure
 
