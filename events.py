@@ -411,9 +411,10 @@ class WebResourceEventManager(EventManager):
                 d.addCallback(self._finish_event)
                 self._current_event = event.eid
                 self._current_event_resource = event.resource
-            except:
-                self._node.log.warn("Unspecified Error trying to play "
-                                    "media for {event}", event=event)
+            except Exception as e:
+                self._node.log.warn("Unhandled Error trying to play "
+                                    "media for {event} : {e}",
+                                    event=event, e=e)
         else:
             self._node.log.warn("Media not ready for {event}",
                                 event=event)
