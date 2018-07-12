@@ -18,6 +18,7 @@ from sqlalchemy.orm.exc import NoResultFound
 
 from .basenode import BaseIoTNode
 from .resources import CacheableResource
+from .mediaplayer import MediaPlayerBusy
 
 
 Base = declarative_base()
@@ -411,10 +412,10 @@ class WebResourceEventManager(EventManager):
                 d.addCallback(self._finish_event)
                 self._current_event = event.eid
                 self._current_event_resource = event.resource
-            except Exception as e:
-                self._node.log.warn("Unhandled Error trying to play "
-                                    "media for {event} : {e}",
-                                    event=event, e=e)
+            except MediaPlayerBusy as e:
+                self._node.log.warn("Mediaplayer busy for {event} : {e}",
+                                    event=event, e=e.now_playing)
+                # TODO Trigger retry here?
         else:
             self._node.log.warn("Media not ready for {event}",
                                 event=event)
