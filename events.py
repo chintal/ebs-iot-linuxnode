@@ -379,13 +379,13 @@ class EventManager(object):
                 if abs(ntd) < timedelta(seconds=3):
                     event = ne
                     nevent = nne
-        retry = None
         if event:
             retry = self._trigger_event(event)
-        if retry:
-            self._execute_task = self._event_scheduler_hop(event)
-        else:
-            self._execute_task = self._event_scheduler_hop(nevent)
+            if retry:
+                self._execute_task = deferLater(self._node.reactor, retry * 0.1,
+                                                self._event_scheduler)
+                return
+        self._execute_task = self._event_scheduler_hop(nevent)
 
     def _event_scheduler_hop(self, next_event=None):
         if not next_event:
@@ -394,13 +394,11 @@ class EventManager(object):
             next_start = timedelta(seconds=60)
         else:
             next_start = next_event.start_time - datetime.now()
-            print("Next Start : ", next_start)
-            if not next_event or next_start < timedelta(0) :
+            # print("Next Start : ", next_start)
+            if not next_event or next_start < timedelta(0):
                 next_start = timedelta(seconds=60)
             elif next_start > timedelta(seconds=60):
                 next_start = timedelta(seconds=60)
-            #elif next_start < timedelta(seconds=1):
-            #    next_start = timedelta(seconds=1)
         self._node.log.debug("SCHED {emid} HOP {ns}", emid=self._emid,
                              ns=next_start.seconds)
         return deferLater(self._node.reactor, next_start.seconds,
@@ -424,7 +422,7 @@ class TextEventManager(EventManager):
         except MarqueeBusy as e:
             self._node.log.warn("Marquee busy for {event} : {e}",
                                 event=event, e=e.now_playing)
-            return True
+            return e.collision_count
         self.remove(event.eid)
         self.prune()
 
@@ -449,7 +447,7 @@ class WebResourceEventManager(EventManager):
             except MediaPlayerBusy as e:
                 self._node.log.warn("Mediaplayer busy for {event} : {e}",
                                     event=event, e=e.now_playing)
-                return True
+                return e.collision_count
         else:
             self._node.log.warn("Media not ready for {event}",
                                 event=event)

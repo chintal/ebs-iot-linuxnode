@@ -4,6 +4,7 @@ import os
 from kivy.core.window import Window
 from kivy.uix.video import Video
 from kivy.uix.boxlayout import BoxLayout
+from six.moves.urllib.parse import urlparse
 
 from .widgets import BleedImage
 from .basemixin import BaseGuiMixin
@@ -22,8 +23,14 @@ class BackgroundGuiMixin(ConfigMixin, BaseGuiMixin):
     def background_set(self, fpath):
         if not os.path.exists(fpath):
             fpath = 'images/background.png'
+
+        old_bg = os.path.basename(urlparse(fpath).path)
+        if self.resource_manager.has(old_bg):
+            self.resource_manager.remove(old_bg)
+
         if self.config.background != fpath:
             self.config.background = fpath
+
         self.gui_bg = fpath
 
     @property
@@ -43,8 +50,11 @@ class BackgroundGuiMixin(ConfigMixin, BaseGuiMixin):
             return
         if self._bg_image:
             self.gui_bg_container.remove_widget(self._bg_image)
+            self._bg_image = None
         if self._bg_video:
             self.gui_bg_container.remove_widget(self._bg_video)
+            self._bg_video.unload()
+            self._bg_video = None
         self._bg_image = BleedImage(
             source=value,
             bgcolor=self._gui_background_color or 'auto'
@@ -62,8 +72,11 @@ class BackgroundGuiMixin(ConfigMixin, BaseGuiMixin):
             return
         if self._bg_image:
             self.gui_bg_container.remove_widget(self._bg_image)
+            self._bg_image = None
         if self._bg_video:
             self.gui_bg_container.remove_widget(self._bg_video)
+            self._bg_video.unload()
+            self._bg_video = None
         self._bg_video = Video(
             source=value, state='play',
             eos='loop', allow_stretch=True

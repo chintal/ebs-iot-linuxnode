@@ -11,8 +11,9 @@ from .background import OverlayWindowGuiMixin
 
 
 class MediaPlayerBusy(Exception):
-    def __init__(self, now_playing):
+    def __init__(self, now_playing, collision_count):
         self.now_playing = now_playing
+        self.collision_count = collision_count
 
     def __repr__(self):
         return "<MediaPlayerBusy Now Playing {0}" \
@@ -36,9 +37,9 @@ class MediaPlayerMixin(NodeLoggingMixin):
         # an image or with a looping video, not otherwise.
         if self._mediaplayer_now_playing:
             self._mediaplayer_collision_count += 1
-            if self._mediaplayer_collision_count > 1:
+            if self._mediaplayer_collision_count > 30:
                 self.media_stop(forced=True)
-            raise MediaPlayerBusy(self._mediaplayer_now_playing)
+            raise MediaPlayerBusy(self._mediaplayer_now_playing, self._mediaplayer_collision_count)
         self._mediaplayer_collision_count = 0
         if hasattr(content, 'filepath'):
             content = content.filepath
@@ -68,8 +69,12 @@ class MediaPlayerMixin(NodeLoggingMixin):
         raise NotImplementedError
 
     def media_stop(self, forced=False):
-        # self.log.info("Media play done")
-        self.gui_bg_resume()
+        self._mediaplayer_collision_count = 0
+
+        def _resume_bg():
+            if not self._mediaplayer_now_playing:
+                self.gui_bg_resume()
+        self.reactor.callLater(1, _resume_bg)
         if self._end_call and self._end_call.active():
             self._end_call.cancel()
         if self._mediaplayer_now_playing:
@@ -117,13 +122,13 @@ class MediaPlayerGuiMixin(OverlayWindowGuiMixin):
     def _media_play_video_omxplayer(self, filepath, loop=False):
         dispmanx_layer = self.config.video_dispmanx_layer
 
-    def media_stop(self):
+    def media_stop(self, forced=False):
         if isinstance(self._media_playing, Video):
             self._media_playing.unload()
         if isinstance(self._media_playing, Image):
             pass
         self.gui_mediaview.clear_widgets()
-        MediaPlayerMixin.media_stop(self)
+        MediaPlayerMixin.media_stop(self, forced=forced)
 
     @property
     def gui_mediaview(self):
