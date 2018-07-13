@@ -436,11 +436,11 @@ class WebResourceEventManager(EventManager):
     def _trigger_event(self, event):
         r = self._node.resource_manager.get(event.resource)
         if r.available:
-            self._node.log.info("Executing Event : {0}".format(event))
             try:
                 d = self._node.media_play(content=r,
                                           duration=event.duration)
                 d.addCallback(self._finish_event)
+                self._node.log.info("Executed Event : {0}".format(event))
                 self._current_event = event.eid
                 self._current_event_resource = event.resource
             except MediaPlayerBusy as e:
