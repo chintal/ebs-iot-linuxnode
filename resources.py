@@ -177,6 +177,22 @@ class ResourceManager(object):
         resource = self._resource_class(self, filename, url, rtype)
         resource.commit()
 
+    def remove(self, filename):
+        session = self.db()
+        try:
+            try:
+                robj = session.query(ResourceModel).filter_by(filename=filename).one()
+            except NoResultFound:
+                return
+
+            session.delete(robj)
+            session.commit()
+        except:
+            session.rollback()
+            raise
+        finally:
+            session.close()
+
     def prefetch(self, resource, retries=None, semaphore=None):
         # Given a resource belonging to this resource manager, download it
         # to the cache if it isn't already there or update its mtime if it is.

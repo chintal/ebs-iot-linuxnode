@@ -13,6 +13,15 @@ class MarqueeInterrupted(Exception):
     pass
 
 
+class MarqueeBusy(Exception):
+    def __init__(self, now_playing):
+        self.now_playing = now_playing
+
+    def __repr__(self):
+        return "<MarqueeBusy Now Playing {0}" \
+               "".format(self.now_playing)
+
+
 class MarqueeGuiMixin(ConfigMixin, BaseGuiMixin):
     _gui_marquee_bgcolor = None
     _gui_marquee_color = None
@@ -36,6 +45,7 @@ class MarqueeGuiMixin(ConfigMixin, BaseGuiMixin):
             self._marquee_collision_count += 1
             if self._marquee_collision_count > 1:
                 self.marquee_stop(forced=True)
+            raise MarqueeBusy(self._marquee_text)
         self._marquee_collision_count = 0
         self.gui_marquee.text = text
         self.marquee_show()

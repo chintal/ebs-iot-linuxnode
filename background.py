@@ -2,6 +2,10 @@
 
 import os
 from kivy.core.window import Window
+from kivy.uix.video import Video
+from kivy.uix.boxlayout import BoxLayout
+from six.moves.urllib.parse import urlparse
+
 from .widgets import BleedImage
 from .basemixin import BaseGuiMixin
 from .config import ConfigMixin
@@ -10,30 +14,98 @@ from .config import ConfigMixin
 class BackgroundGuiMixin(ConfigMixin, BaseGuiMixin):
     def __init__(self, *args, **kwargs):
         self._bg_image = None
+        self._bg_video = None
+        self._bg = None
         self._gui_background_color = kwargs.pop('background_color', None)
+        self._bg_container = None
         super(BackgroundGuiMixin, self).__init__(*args, **kwargs)
+
+    def background_set(self, fpath):
+        if not os.path.exists(fpath):
+            fpath = 'images/background.png'
+        old_bg = os.path.basename(urlparse(fpath).path)
+        if self.resource_manager.has(old_bg):
+            self.resource_manager.remove(old_bg)
+        if self.config.background != fpath:
+            self.config.background = fpath
+        self.gui_bg = fpath
+
+    @property
+    def gui_bg_container(self):
+        if self._bg_container is None:
+            self._bg_container = BoxLayout()
+            self.gui_root.add_widget(self._bg_container)
+        return self._bg_container
 
     @property
     def gui_bg_image(self):
-        if self._bg_image is None:
-            self._bg_image = BleedImage(
-                source=self.config.background,
-                bgcolor=self._gui_background_color or 'auto'
-            )
-            self.gui_root.add_widget(self._bg_image)
         return self._bg_image
 
     @gui_bg_image.setter
     def gui_bg_image(self, value):
         if not os.path.exists(value):
             return
-        self.gui_bg_image.source = value
-        # TODO Write config to disk
-        self.config.background = value
+        if self._bg_image:
+            self.gui_bg_container.remove_widget(self._bg_image)
+        if self._bg_video:
+            self.gui_bg_container.remove_widget(self._bg_video)
+        self._bg_image = BleedImage(
+            source=value,
+            bgcolor=self._gui_background_color or 'auto'
+        )
+        self._bg = self._bg_image
+        self.gui_bg_container.add_widget(self._bg_image)
+
+    @property
+    def gui_bg_video(self):
+        return self._bg_video
+
+    @gui_bg_video.setter
+    def gui_bg_video(self, value):
+        if not os.path.exists(value):
+            return
+        if self._bg_image:
+            self.gui_bg_container.remove_widget(self._bg_image)
+        if self._bg_video:
+            self.gui_bg_container.remove_widget(self._bg_video)
+        self._bg_video = Video(
+            source=value, state='play',
+            eos='loop', allow_stretch=True
+        )
+
+        def _when_done(*_):
+            self._bg_video.state = 'play'
+        self._bg_video.bind(eos=_when_done)
+        self._bg = self._bg_video
+        self.gui_bg_container.add_widget(self._bg_video)
+
+    @property
+    def gui_bg(self):
+        return self._bg
+
+    @gui_bg.setter
+    def gui_bg(self, value):
+        if not os.path.exists(value):
+            self.config.background = value
+
+        _media_extentions_image = ['.png', '.jpg', '.bmp', '.gif']
+        if os.path.splitext(value)[1] in _media_extentions_image:
+            self.gui_bg_image = value
+        else:
+            self.gui_bg_video = value
+
+    def gui_bg_pause(self):
+        if isinstance(self.gui_bg, Video):
+            self.gui_bg.state = 'pause'
+
+    def gui_bg_resume(self):
+        if isinstance(self.gui_bg, Video):
+            self.gui_bg.state = 'play'
+            self.gui_bg.eos = 'loop'
 
     def gui_setup(self):
         super(BackgroundGuiMixin, self).gui_setup()
-        _ = self.gui_bg_image
+        self.gui_bg = self.config.background
 
 
 class OverlayWindowGuiMixin(BackgroundGuiMixin):
@@ -74,13 +146,15 @@ class OverlayWindowGuiMixin(BackgroundGuiMixin):
             return
         self._overlay_mode = True
         Window.clearcolor = [0, 0, 0, 0]
-        self.gui_root.remove_widget(self._bg_image)
+        self.gui_bg_pause()
+        self.gui_root.remove_widget(self._bg_container)
 
     def _gui_overlay_mode_exit(self):
         if not self._overlay_mode:
             return
         self._overlay_mode = False
-        self.gui_root.add_widget(self._bg_image, len(self.gui_root.children))
+        self.gui_root.add_widget(self._bg_container, len(self.gui_root.children))
+        self.gui_bg_resume()
         Window.clearcolor = [0, 0, 0, 1]
 
     def gui_setup(self):

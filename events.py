@@ -19,6 +19,7 @@ from sqlalchemy.orm.exc import NoResultFound
 from .basenode import BaseIoTNode
 from .resources import CacheableResource
 from .mediaplayer import MediaPlayerBusy
+from .marquee import MarqueeBusy
 
 
 Base = declarative_base()
@@ -209,7 +210,7 @@ class EventManager(object):
             try:
                 eobj = session.query(self.db_model).filter_by(eid=eid).one()
             except NoResultFound:
-                pass
+                return
 
             session.delete(eobj)
             session.commit()
@@ -376,9 +377,13 @@ class EventManager(object):
                 if abs(ntd) < timedelta(seconds=2):
                     event = ne
                     nevent = nne
+        retry = None
         if event:
-            self._trigger_event(event)
-        self._execute_task = self._event_scheduler_hop(nevent)
+            retry = self._trigger_event(event)
+        if retry:
+            self._event_scheduler_hop(event)
+        else:
+            self._execute_task = self._event_scheduler_hop(nevent)
 
     def _event_scheduler_hop(self, next_event=None):
         if not next_event:
@@ -387,8 +392,12 @@ class EventManager(object):
             next_start = timedelta(seconds=60)
         else:
             next_start = next_event.start_time - datetime.now()
-            if not next_event or next_start > timedelta(seconds=60):
+            if not next_event:
                 next_start = timedelta(seconds=60)
+            elif next_start > timedelta(seconds=60):
+                next_start = timedelta(seconds=60)
+            elif next_start < timedelta(seconds=1):
+                next_start = timedelta(seconds=1)
         self._node.log.debug("SCHED {emid} HOP {ns}", emid=self._emid,
                              ns=next_start.seconds)
         return deferLater(self._node.reactor, next_start.seconds,
@@ -403,11 +412,16 @@ class EventManager(object):
 class TextEventManager(EventManager):
     def _trigger_event(self, event):
         self._node.log.info("Executing Event : {0}".format(event))
-        d = self._node.marquee_play(text=event.resource,
-                                    duration=event.duration)
-        d.addCallback(self._finish_event)
-        self._current_event = event.eid
-        self._current_event_resource = event.resource
+        try:
+            d = self._node.marquee_play(text=event.resource,
+                                        duration=event.duration)
+            d.addCallback(self._finish_event)
+            self._current_event = event.eid
+            self._current_event_resource = event.resource
+        except MarqueeBusy as e:
+            self._node.log.warn("Marquee busy for {event} : {e}",
+                                event=event, e=e.now_playing)
+            return True
         self.remove(event.eid)
         self.prune()
 
@@ -432,7 +446,7 @@ class WebResourceEventManager(EventManager):
             except MediaPlayerBusy as e:
                 self._node.log.warn("Mediaplayer busy for {event} : {e}",
                                     event=event, e=e.now_playing)
-                # TODO Trigger retry here?
+                return True
         else:
             self._node.log.warn("Media not ready for {event}",
                                 event=event)

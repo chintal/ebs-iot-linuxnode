@@ -20,7 +20,7 @@ class MediaPlayerBusy(Exception):
 
 
 class MediaPlayerMixin(NodeLoggingMixin):
-    _media_extentions_image = ['.png', '.jpg', '.bmp']
+    _media_extentions_image = ['.png', '.jpg', '.bmp', '.gif']
     _media_extentions_video = []
 
     def __init__(self, *args, **kwargs):
@@ -48,6 +48,7 @@ class MediaPlayerMixin(NodeLoggingMixin):
             return
         if duration:
             self._end_call = self.reactor.callLater(duration, self.media_stop)
+        self.gui_bg_pause()
         if os.path.splitext(content)[1] in self._media_extentions_image:
             # self.log.info("Showing image {filename}",
             #               filename=os.path.basename(content))
@@ -68,6 +69,7 @@ class MediaPlayerMixin(NodeLoggingMixin):
 
     def media_stop(self, forced=False):
         # self.log.info("Media play done")
+        self.gui_bg_resume()
         if self._end_call and self._end_call.active():
             self._end_call.cancel()
         if self._mediaplayer_now_playing:
