@@ -353,6 +353,8 @@ class EventManager(object):
             self._succeed_event(self._current_event)
         self._current_event = None
         self._current_event_resource = None
+        self._execute_task.cancel()
+        self._event_scheduler()
 
     def _succeed_event(self, event):
         raise NotImplementedError
@@ -374,14 +376,14 @@ class EventManager(object):
                 ntd = ne.start_time - datetime.now()
                 self._node.log.debug("S {emid} NTD {ntd}", 
                                      ntd=ntd, emid=self._emid)
-                if abs(ntd) < timedelta(seconds=2):
+                if abs(ntd) < timedelta(seconds=3):
                     event = ne
                     nevent = nne
         retry = None
         if event:
             retry = self._trigger_event(event)
         if retry:
-            self._event_scheduler_hop(event)
+            self._execute_task = self._event_scheduler_hop(event)
         else:
             self._execute_task = self._event_scheduler_hop(nevent)
 

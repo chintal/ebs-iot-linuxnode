@@ -95,13 +95,14 @@ class BackgroundGuiMixin(ConfigMixin, BaseGuiMixin):
             self.gui_bg_video = value
 
     def gui_bg_pause(self):
+        self.gui_root.remove_widget(self._bg_container)
         if isinstance(self.gui_bg, Video):
             self.gui_bg.state = 'pause'
 
     def gui_bg_resume(self):
+        self.gui_root.add_widget(self._bg_container, len(self.gui_root.children))
         if isinstance(self.gui_bg, Video):
             self.gui_bg.state = 'play'
-            self.gui_bg.eos = 'loop'
 
     def gui_setup(self):
         super(BackgroundGuiMixin, self).gui_setup()
@@ -147,13 +148,11 @@ class OverlayWindowGuiMixin(BackgroundGuiMixin):
         self._overlay_mode = True
         Window.clearcolor = [0, 0, 0, 0]
         self.gui_bg_pause()
-        self.gui_root.remove_widget(self._bg_container)
 
     def _gui_overlay_mode_exit(self):
         if not self._overlay_mode:
             return
         self._overlay_mode = False
-        self.gui_root.add_widget(self._bg_container, len(self.gui_root.children))
         self.gui_bg_resume()
         Window.clearcolor = [0, 0, 0, 1]
 
