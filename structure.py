@@ -84,7 +84,7 @@ class BaseGuiStructureMixin(object):
             _ = self.gui_primary_root
             self._gui_footer = BoxLayout(
                 orientation='vertical', size_hint=(1, None),
-                height=60, padding=['0sp', '0sp', '0sp', '8sp']
+                height=80, padding=['0sp', '0sp', '0sp', '8sp']
             )
         return self._gui_footer
 

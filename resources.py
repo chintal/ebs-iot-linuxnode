@@ -284,7 +284,10 @@ class CachingResourceManager(ResourceManager):
         size = self.cache_file_size(filename)
         # self._node.log.debug("Removing {filename} of size {size} from cache",
         #                      filename=filename, size=size)
-        os.remove(self.cache_path(filename))
+        try:
+            os.remove(self.cache_path(filename))
+        except FileNotFoundError:
+            pass
         return size
 
     def cache_has(self, filename):

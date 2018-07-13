@@ -28,13 +28,18 @@ class MediaPlayerMixin(NodeLoggingMixin):
         self._media_player_deferred = None
         self._mediaplayer_now_playing = None
         self._end_call = None
+        self._mediaplayer_collision_count = 0
 
     def media_play(self, content, duration=None, loop=False):
         # Play the media file at filepath. If loop is true, restart the media
         # when it's done. You probably would want to provide a duration with
         # an image or with a looping video, not otherwise.
         if self._mediaplayer_now_playing:
+            self._mediaplayer_collision_count += 1
+            if self._mediaplayer_collision_count > 1:
+                self.media_stop(forced=True)
             raise MediaPlayerBusy(self._mediaplayer_now_playing)
+        self._mediaplayer_collision_count = 0
         if hasattr(content, 'filepath'):
             content = content.filepath
         if not os.path.exists(content):
@@ -61,12 +66,14 @@ class MediaPlayerMixin(NodeLoggingMixin):
     def _media_play_video(self, filepath, loop=False):
         raise NotImplementedError
 
-    def media_stop(self):
+    def media_stop(self, forced=False):
         # self.log.info("Media play done")
+        if self._end_call and self._end_call.active():
+            self._end_call.cancel()
         if self._mediaplayer_now_playing:
             self._mediaplayer_now_playing = None
         if self._media_player_deferred:
-            self._media_player_deferred.callback(True)
+            self._media_player_deferred.callback(forced)
             self._media_player_deferred = None
 
 

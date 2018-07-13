@@ -22,6 +22,8 @@ class MarqueeGuiMixin(ConfigMixin, BaseGuiMixin):
         self._gui_marquee = None
         self._marquee_text = None
         self._marquee_deferred = None
+        self._marquee_end_call = None
+        self._marquee_collision_count = 0
 
     def marquee_show(self):
         self.gui_footer_show()
@@ -31,23 +33,28 @@ class MarqueeGuiMixin(ConfigMixin, BaseGuiMixin):
 
     def marquee_play(self, text, duration=None, loop=True):
         if self._marquee_deferred:
-            self._marquee_deferred.cancel()
+            self._marquee_collision_count += 1
+            if self._marquee_collision_count > 1:
+                self.marquee_stop(forced=True)
+        self._marquee_collision_count = 0
         self.gui_marquee.text = text
         self.marquee_show()
 
         if duration:
             self._gui_marquee.start(loop=loop)
-            self.reactor.callLater(duration, self.marquee_stop)
+            self._marquee_end_call = self.reactor.callLater(duration, self.marquee_stop)
         else:
             self._gui_marquee.start(callback=self.marquee_stop)
         self._marquee_deferred = Deferred()
         return self._marquee_deferred
 
-    def marquee_stop(self):
+    def marquee_stop(self, forced=False):
         self._gui_marquee.stop()
         self.marquee_hide()
+        if self._marquee_end_call and self._marquee_end_call.active():
+            self._marquee_end_call.cancel()
         if self._marquee_deferred:
-            self._marquee_deferred.callback(True)
+            self._marquee_deferred.callback(forced)
             self._marquee_deferred = None
 
     @property
@@ -57,7 +64,7 @@ class MarqueeGuiMixin(ConfigMixin, BaseGuiMixin):
                                   color_set_alpha(self.gui_color_2, 0.4)),
                       'color': [1, 1, 1, 1],
                       'font_name': 'fonts/FreeSans.ttf',
-                      'font_size': '20sp'}
+                      'font_size': '36sp'}
             self._gui_marquee = MarqueeLabel(text='Marquee Text', **params)
 
             self.gui_footer.add_widget(self._gui_marquee)

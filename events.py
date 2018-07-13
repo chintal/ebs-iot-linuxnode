@@ -32,7 +32,7 @@ class WebResourceEventsModel(Base):
     __tablename__ = 'events_1'
 
     id = Column(Integer, primary_key=True)
-    eid = Column(Text, index=True)
+    eid = Column(Text, unique=True, index=True)
     etype = Column(Integer)
     resource = Column(Text, index=True)
     start_time = Column(DateTime, index=True)
@@ -49,7 +49,7 @@ class TextEventsModel(Base):
     __tablename__ = 'events_2'
 
     id = Column(Integer, primary_key=True)
-    eid = Column(Text, index=True)
+    eid = Column(Text, unique=True, index=True)
     etype = Column(Integer)
     resource = Column(Text)
     start_time = Column(DateTime, index=True)
@@ -209,10 +209,9 @@ class EventManager(object):
             try:
                 eobj = session.query(self.db_model).filter_by(eid=eid).one()
             except NoResultFound:
-                return
+                pass
 
             session.delete(eobj)
-            session.flush()
             session.commit()
         except:
             session.rollback()
@@ -343,10 +342,14 @@ class EventManager(object):
     def _trigger_event(self, event):
         raise NotImplementedError
 
-    def _finish_event(self, _):
-        self._node.log.debug("Successfully finished event {eid}",
-                             eid=self._current_event)
-        self._succeed_event(self._current_event)
+    def _finish_event(self, forced):
+        if forced:
+            self._node.log.info("Event {eid} was force stopped.",
+                                eid=self._current_event)
+        else:
+            self._node.log.info("Successfully finished event {eid}",
+                                eid=self._current_event)
+            self._succeed_event(self._current_event)
         self._current_event = None
         self._current_event_resource = None
 
@@ -361,7 +364,7 @@ class EventManager(object):
             ltd = datetime.now() - le.start_time
             #self._node.log.debug("S {emid} LTD {ltd}", 
             #                     ltd=ltd, emid=self._emid)
-            if abs(ltd) < timedelta(seconds=5):
+            if abs(ltd) < timedelta(seconds=3):
                 event = le
                 nevent = ne
         if not event:
@@ -370,7 +373,7 @@ class EventManager(object):
                 ntd = ne.start_time - datetime.now()
                 self._node.log.debug("S {emid} NTD {ntd}", 
                                      ntd=ntd, emid=self._emid)
-                if abs(ntd) < timedelta(seconds=3):
+                if abs(ntd) < timedelta(seconds=2):
                     event = ne
                     nevent = nne
         if event:
@@ -384,7 +387,7 @@ class EventManager(object):
             next_start = timedelta(seconds=60)
         else:
             next_start = next_event.start_time - datetime.now()
-            if next_start > timedelta(seconds=60):
+            if not next_event or next_start > timedelta(seconds=60):
                 next_start = timedelta(seconds=60)
         self._node.log.debug("SCHED {emid} HOP {ns}", emid=self._emid,
                              ns=next_start.seconds)
