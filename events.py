@@ -353,8 +353,8 @@ class EventManager(object):
             self._succeed_event(self._current_event)
         self._current_event = None
         self._current_event_resource = None
-        self._execute_task.cancel()
-        self._event_scheduler()
+        #self._execute_task.cancel()
+        #self._event_scheduler()
 
     def _succeed_event(self, event):
         raise NotImplementedError
@@ -365,8 +365,8 @@ class EventManager(object):
         le, ne = self.previous(follow=True)
         if le:
             ltd = datetime.now() - le.start_time
-            #self._node.log.debug("S {emid} LTD {ltd}", 
-            #                     ltd=ltd, emid=self._emid)
+            self._node.log.debug("S {emid} LTD {ltd}", 
+                                 ltd=ltd, emid=self._emid)
             if abs(ltd) < timedelta(seconds=3):
                 event = le
                 nevent = ne
@@ -394,12 +394,13 @@ class EventManager(object):
             next_start = timedelta(seconds=60)
         else:
             next_start = next_event.start_time - datetime.now()
-            if not next_event:
+            print("Next Start : ", next_start)
+            if not next_event or next_start < timedelta(0) :
                 next_start = timedelta(seconds=60)
             elif next_start > timedelta(seconds=60):
                 next_start = timedelta(seconds=60)
-            elif next_start < timedelta(seconds=1):
-                next_start = timedelta(seconds=1)
+            #elif next_start < timedelta(seconds=1):
+            #    next_start = timedelta(seconds=1)
         self._node.log.debug("SCHED {emid} HOP {ns}", emid=self._emid,
                              ns=next_start.seconds)
         return deferLater(self._node.reactor, next_start.seconds,

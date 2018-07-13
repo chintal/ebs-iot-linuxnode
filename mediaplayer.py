@@ -20,7 +20,7 @@ class MediaPlayerBusy(Exception):
 
 
 class MediaPlayerMixin(NodeLoggingMixin):
-    _media_extentions_image = ['.png', '.jpg', '.bmp', '.gif']
+    _media_extentions_image = ['.png', '.jpg', '.bmp', '.gif', 'jpeg']
     _media_extentions_video = []
 
     def __init__(self, *args, **kwargs):

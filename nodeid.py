@@ -80,4 +80,4 @@ class NodeIDGuiMixin(BaseGuiMixin):
 
     def gui_setup(self):
         super(NodeIDGuiMixin, self).gui_setup()
-        _ = self.gui_id_tag
+        # _ = self.gui_id_tag

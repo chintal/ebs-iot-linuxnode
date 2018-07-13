@@ -96,7 +96,7 @@ class MarqueeLabel(ScrollView):
     def text(self, value):
         self.remove_widget(self._layout)
 
-        texts = split_string(value, 512)
+        texts = split_string(value, 64)
         self._layout.clear_widgets()
         self._layout.add_widget(self._lspacer)
 

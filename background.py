@@ -23,9 +23,9 @@ class BackgroundGuiMixin(ConfigMixin, BaseGuiMixin):
     def background_set(self, fpath):
         if not os.path.exists(fpath):
             fpath = 'images/background.png'
-        old_bg = os.path.basename(urlparse(fpath).path)
-        if self.resource_manager.has(old_bg):
-            self.resource_manager.remove(old_bg)
+        #old_bg = os.path.basename(urlparse(fpath).path)
+        #if self.resource_manager.has(old_bg):
+        #    self.resource_manager.remove(old_bg)
         if self.config.background != fpath:
             self.config.background = fpath
         self.gui_bg = fpath
@@ -88,7 +88,7 @@ class BackgroundGuiMixin(ConfigMixin, BaseGuiMixin):
         if not os.path.exists(value):
             self.config.background = value
 
-        _media_extentions_image = ['.png', '.jpg', '.bmp', '.gif']
+        _media_extentions_image = ['.png', '.jpg', '.bmp', '.gif', '.jpeg']
         if os.path.splitext(value)[1] in _media_extentions_image:
             self.gui_bg_image = value
         else:
