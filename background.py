@@ -4,7 +4,6 @@ import os
 from kivy.core.window import Window
 from kivy.uix.video import Video
 from kivy.uix.boxlayout import BoxLayout
-from six.moves.urllib.parse import urlparse
 
 from .widgets import BleedImage
 from .basemixin import BaseGuiMixin
