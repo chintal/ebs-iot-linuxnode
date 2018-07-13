@@ -411,11 +411,11 @@ class EventManager(object):
 
 class TextEventManager(EventManager):
     def _trigger_event(self, event):
-        self._node.log.info("Executing Event : {0}".format(event))
         try:
             d = self._node.marquee_play(text=event.resource,
                                         duration=event.duration)
             d.addCallback(self._finish_event)
+            self._node.log.info("Executed Event : {0}".format(event))
             self._current_event = event.eid
             self._current_event_resource = event.resource
         except MarqueeBusy as e:
