@@ -39,7 +39,8 @@ class MediaPlayerMixin(NodeLoggingMixin):
             self._mediaplayer_collision_count += 1
             if self._mediaplayer_collision_count > 30:
                 self.media_stop(forced=True)
-            raise MediaPlayerBusy(self._mediaplayer_now_playing, self._mediaplayer_collision_count)
+            raise MediaPlayerBusy(self._mediaplayer_now_playing,
+                                  self._mediaplayer_collision_count)
         self._mediaplayer_collision_count = 0
         if hasattr(content, 'filepath'):
             content = content.filepath
@@ -69,16 +70,21 @@ class MediaPlayerMixin(NodeLoggingMixin):
         raise NotImplementedError
 
     def media_stop(self, forced=False):
+        self.log.info("End Offset by {0} collisions."
+                      "".format(self._mediaplayer_collision_count))
         self._mediaplayer_collision_count = 0
 
         def _resume_bg():
             if not self._mediaplayer_now_playing:
                 self.gui_bg_resume()
         self.reactor.callLater(1, _resume_bg)
+
         if self._end_call and self._end_call.active():
             self._end_call.cancel()
+
         if self._mediaplayer_now_playing:
             self._mediaplayer_now_playing = None
+
         if self._media_player_deferred:
             self._media_player_deferred.callback(forced)
             self._media_player_deferred = None

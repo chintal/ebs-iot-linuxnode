@@ -46,7 +46,8 @@ class MarqueeGuiMixin(ConfigMixin, BaseGuiMixin):
             self._marquee_collision_count += 1
             if self._marquee_collision_count > 30:
                 self.marquee_stop(forced=True)
-            raise MarqueeBusy(self._marquee_text, self._marquee_collision_count)
+            raise MarqueeBusy(self._marquee_text,
+                              self._marquee_collision_count)
         self._marquee_collision_count = 0
         self.gui_marquee.text = text
         self.marquee_show()
@@ -61,10 +62,14 @@ class MarqueeGuiMixin(ConfigMixin, BaseGuiMixin):
 
     def marquee_stop(self, forced=False):
         self._gui_marquee.stop()
+        self.log.info("End Offset by {0} collisions."
+                      "".format(self._marquee_collision_count))
         self._marquee_collision_count = 0
         self.marquee_hide()
+
         if self._marquee_end_call and self._marquee_end_call.active():
             self._marquee_end_call.cancel()
+
         if self._marquee_deferred:
             self._marquee_deferred.callback(forced)
             self._marquee_deferred = None

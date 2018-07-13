@@ -179,13 +179,14 @@ class ResourceManager(object):
 
     def remove(self, filename):
         session = self.db()
+        # print("Trying to remove {0} from rdb".format(filename))
         try:
             try:
                 robj = session.query(ResourceModel).filter_by(filename=filename).one()
             except NoResultFound:
                 return
-
             session.delete(robj)
+            # print("Committing rdel")
             session.commit()
         except:
             session.rollback()

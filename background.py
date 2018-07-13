@@ -24,11 +24,10 @@ class BackgroundGuiMixin(ConfigMixin, BaseGuiMixin):
         if not os.path.exists(fpath):
             fpath = 'images/background.png'
 
-        old_bg = os.path.basename(urlparse(fpath).path)
-        if self.resource_manager.has(old_bg):
-            self.resource_manager.remove(old_bg)
-
         if self.config.background != fpath:
+            old_bg = os.path.basename(urlparse(self.config.background).path)
+            if self.resource_manager.has(old_bg):
+                self.resource_manager.remove(old_bg)
             self.config.background = fpath
 
         self.gui_bg = fpath

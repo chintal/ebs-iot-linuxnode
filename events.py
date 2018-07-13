@@ -206,12 +206,13 @@ class EventManager(object):
 
     def remove(self, eid):
         session = self.db()
+        # print("Trying to remove {0} from edb".format(eid))
         try:
             try:
                 eobj = session.query(self.db_model).filter_by(eid=eid).one()
             except NoResultFound:
                 return
-
+            # print("Commiting edel")
             session.delete(eobj)
             session.commit()
         except:
@@ -353,8 +354,6 @@ class EventManager(object):
             self._succeed_event(self._current_event)
         self._current_event = None
         self._current_event_resource = None
-        #self._execute_task.cancel()
-        #self._event_scheduler()
 
     def _succeed_event(self, event):
         raise NotImplementedError
@@ -365,8 +364,8 @@ class EventManager(object):
         le, ne = self.previous(follow=True)
         if le:
             ltd = datetime.now() - le.start_time
-            self._node.log.debug("S {emid} LTD {ltd}", 
-                                 ltd=ltd, emid=self._emid)
+            # self._node.log.debug("S {emid} LTD {ltd}",
+            #                      ltd=ltd, emid=self._emid)
             if abs(ltd) < timedelta(seconds=3):
                 event = le
                 nevent = ne
@@ -374,15 +373,15 @@ class EventManager(object):
             ne, nne = self.next(follow=True)
             if ne:
                 ntd = ne.start_time - datetime.now()
-                self._node.log.debug("S {emid} NTD {ntd}", 
-                                     ntd=ntd, emid=self._emid)
+                # self._node.log.debug("S {emid} NTD {ntd}",
+                #                      ntd=ntd, emid=self._emid)
                 if abs(ntd) < timedelta(seconds=3):
                     event = ne
                     nevent = nne
         if event:
             retry = self._trigger_event(event)
             if retry:
-                self._execute_task = deferLater(self._node.reactor, retry * 0.1,
+                self._execute_task = deferLater(self._node.reactor, 0.1,
                                                 self._event_scheduler)
                 return
         self._execute_task = self._event_scheduler_hop(nevent)
@@ -420,8 +419,8 @@ class TextEventManager(EventManager):
             self._current_event = event.eid
             self._current_event_resource = event.resource
         except MarqueeBusy as e:
-            self._node.log.warn("Marquee busy for {event} : {e}",
-                                event=event, e=e.now_playing)
+            # self._node.log.warn("Marquee busy for {event} : {e}",
+            #                     event=event, e=e.now_playing)
             return e.collision_count
         self.remove(event.eid)
         self.prune()
@@ -445,8 +444,8 @@ class WebResourceEventManager(EventManager):
                 self._current_event = event.eid
                 self._current_event_resource = event.resource
             except MediaPlayerBusy as e:
-                self._node.log.warn("Mediaplayer busy for {event} : {e}",
-                                    event=event, e=e.now_playing)
+                # self._node.log.warn("Mediaplayer busy for {event} : {e}",
+                #                     event=event, e=e.now_playing)
                 return e.collision_count
         else:
             self._node.log.warn("Media not ready for {event}",
