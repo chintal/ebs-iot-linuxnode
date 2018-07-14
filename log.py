@@ -2,6 +2,7 @@
 
 import os
 import io
+import time
 from twisted import logger
 from twisted.logger import textFileLogObserver
 from twisted.logger import STDLibLogObserver
@@ -31,6 +32,8 @@ class NodeLoggingMixin(ConfigMixin, BaseMixin):
 
     def __init__(self, *args, **kwargs):
         super(NodeLoggingMixin, self).__init__(*args, **kwargs)
+        self._log_file = None
+        self.log_prune()
         self._log = logger.Logger(namespace=self._appname,
                                   source=self)
         self.reactor.callWhenRunning(self._start_logging)
@@ -56,7 +59,28 @@ class NodeLoggingMixin(ConfigMixin, BaseMixin):
 
     @property
     def log_file(self):
-        return os.path.join(self.log_dir, 'runlog')
+        if not self._log_file:
+            self._log_file = os.path.join(
+                self.log_dir, 
+                'runlog_{0}'.format(datetime.today().strftime('%d%m%y'))
+            )
+        return self._log_file
+
+    def log_prune(self):
+        for fname in self.log_files:
+            fpath = os.path.join(self.log_dir, fname)
+            mtime = os.path.getmtime(fpath)
+            if time.time() - mtime > (7 * 24 * 60 * 60):
+                os.remove(fpath)
+
+    @property
+    def log_files(self):
+        return self._log_files()
+
+    def _log_files(self):
+        for filename in os.listdir(self.log_dir):
+            if os.path.isfile(os.path.join(self.log_dir, filename)):
+                yield filename
 
     @property
     def log_dir(self):
