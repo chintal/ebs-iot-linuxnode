@@ -77,7 +77,7 @@ class MediaPlayerMixin(NodeLoggingMixin):
         def _resume_bg():
             if not self._mediaplayer_now_playing:
                 self.gui_bg_resume()
-        self.reactor.callLater(1, _resume_bg)
+        self.reactor.callLater(1.5, _resume_bg)
 
         if self._end_call and self._end_call.active():
             self._end_call.cancel()
