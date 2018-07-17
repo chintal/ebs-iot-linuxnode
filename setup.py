@@ -5,7 +5,7 @@ _requires = [
     'setuptools-scm',
     'appdirs',
     'Cython',
-    'twisted',
+    'twisted[tls]',
     'SQLAlchemy',
     'kivy>1.10.1',
 
