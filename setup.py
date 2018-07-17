@@ -2,6 +2,7 @@ import setuptools
 
 _requires = [
     'six',
+    'setuptools-scm',
     'appdirs',
     'Cython',
     'twisted',
