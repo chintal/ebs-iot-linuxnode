@@ -80,10 +80,9 @@ class MarqueeGuiMixin(ConfigMixin, BaseGuiMixin):
             params = {'bgcolor': (self._gui_marquee_bgcolor or
                                   color_set_alpha(self.gui_color_2, 0.4)),
                       'color': [1, 1, 1, 1],
-                      # 'font_name': 'fonts/ARIALUNI.TTF',
-                      # 'font_name': 'fonts/unifont-11.0.01.ttf',
-                      'font_name': 'fonts/FreeSans.ttf',
                       'font_size': '36sp'}
+            if self.config.text_font_name:
+                params['font_name'] = self.config.text_font_name
             self._gui_marquee = MarqueeLabel(text='Marquee Text', **params)
 
             self.gui_footer.add_widget(self._gui_marquee)

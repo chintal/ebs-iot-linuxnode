@@ -129,6 +129,12 @@ class IoTNodeConfig(object):
         if self.platform == 'rpi':
             return self._config.getint('video-rpi', 'dispmanx_video_layer', fallback=0)
 
+    # Fonts
+    @property
+    def text_font_name(self):
+        font_name = self._config.get('text', 'font_name', fallback=None)
+        return font_name
+
     # API
     @property
     def api_url(self):
