@@ -2,50 +2,21 @@
 from twisted.internet.task import LoopingCall
 from twisted.internet.defer import succeed
 
-from ..iotnode.http import HttpClientMixin
-from ..iotnode.http_utils import HTTPError
-from ..iotnode.nodeid import NodeIDMixin
+from .log import NodeLoggingMixin
+from .http import HttpClientMixin
+from .http import HTTPError
+from .nodeid import NodeIDMixin
 
 
-class BaseApiEngineMixin(HttpClientMixin, NodeIDMixin):
+class BaseApiEngineMixin(NodeLoggingMixin):
     _api_probe = None
     _api_tasks = []
-    _api_headers = {}
     _api_reconnect_frequency = 30
 
     def __init__(self, *args, **kwargs):
         super(BaseApiEngineMixin, self).__init__(*args, **kwargs)
         self._api_reconnect_task = None
-        self._api_token = None
         self._api_engine_active = False
-
-    @property
-    def api_token(self):
-        raise NotImplementedError
-
-    def api_token_reset(self):
-        raise NotImplementedError
-
-    """ Core API Executor """
-    def _api_execute(self, ep, request_builder, response_handler):
-        url = "{0}/{1}".format(self.api_url, ep)
-        d = self.api_token
-        d.addCallback(request_builder)
-
-        def _get_response(params):
-            r = self.http_post(url, json=params, headers=self._api_headers)
-            return r
-        d.addCallback(_get_response)
-
-        def _error_handler(failure):
-            if isinstance(failure.value, HTTPError) and \
-                    failure.value.response.code == 403:
-                self.api_token_reset()
-            if not self.api_reconnect_task.running:
-                self.api_engine_reconnect()
-            return failure
-        d.addCallbacks(response_handler, _error_handler)
-        return d
 
     """ API Task Management """
     @property
@@ -102,6 +73,7 @@ class BaseApiEngineMixin(HttpClientMixin, NodeIDMixin):
                 return
             else:
                 return failure
+
         d.addCallbacks(
             self._api_start_all_tasks,
             _error_handler
@@ -128,10 +100,6 @@ class BaseApiEngineMixin(HttpClientMixin, NodeIDMixin):
     def api_engine_active(self):
         return self._api_engine_active
 
-    @property
-    def api_url(self):
-        return self.config.api_url
-
     def start(self):
         super(BaseApiEngineMixin, self).start()
         self.api_engine_activate()
@@ -139,3 +107,49 @@ class BaseApiEngineMixin(HttpClientMixin, NodeIDMixin):
     def stop(self):
         self.api_engine_stop()
         super(BaseApiEngineMixin, self).stop()
+
+
+class HttpApiEngineMixin(BaseApiEngineMixin, HttpClientMixin):
+    _api_headers = {}
+
+    def __init__(self, *args, **kwargs):
+        super(HttpApiEngineMixin, self).__init__(*args, **kwargs)
+        self._api_token = None
+
+    @property
+    def api_token(self):
+        raise NotImplementedError
+
+    def api_token_reset(self):
+        raise NotImplementedError
+
+    """ Core HTTP API Executor """
+    def _api_execute(self, ep, request_builder, response_handler):
+        url = "{0}/{1}".format(self.api_url, ep)
+        d = self.api_token
+        d.addCallback(request_builder)
+
+        def _get_response(params):
+            r = self.http_post(url, json=params, headers=self._api_headers)
+            return r
+        d.addCallback(_get_response)
+
+        def _error_handler(failure):
+            if isinstance(failure.value, HTTPError) and \
+                    failure.value.response.code == 403:
+                self.api_token_reset()
+            if not self.api_reconnect_task.running:
+                self.api_engine_reconnect()
+            return failure
+        d.addCallbacks(response_handler, _error_handler)
+        return d
+
+    @property
+    def api_url(self):
+        return self.config.api_url
+
+    def start(self):
+        super(HttpApiEngineMixin, self).start()
+
+    def stop(self):
+        super(HttpApiEngineMixin, self).stop()

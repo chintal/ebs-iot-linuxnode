@@ -108,7 +108,8 @@ class BackgroundGuiMixin(ConfigMixin, BaseGuiMixin):
             self.gui_bg.state = 'pause'
 
     def gui_bg_resume(self):
-        self.gui_root.add_widget(self._bg_container, len(self.gui_root.children))
+        if not self._bg_container.parent:
+            self.gui_root.add_widget(self._bg_container, len(self.gui_root.children))
         if isinstance(self.gui_bg, Video):
             self.gui_bg.state = 'play'
 

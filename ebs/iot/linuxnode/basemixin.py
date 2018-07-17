@@ -3,7 +3,6 @@
 import os
 from appdirs import user_cache_dir
 from twisted.internet import reactor
-from profiling.tracing import TracingProfiler
 from .structure import BaseGuiStructureMixin
 
 
@@ -14,7 +13,6 @@ class BaseMixin(object):
         self._reactor = kwargs.pop('reactor', reactor)
         self._cache_dir = None
         self._db_dir = None
-        self._profiler = TracingProfiler()
         super(BaseMixin, self).__init__(*args, **kwargs)
 
     def start(self):

@@ -49,7 +49,7 @@ class IoTNodeConfig(object):
 
     @property
     def background(self):
-        return self._config.get('display', 'background', fallback='images/background.png')
+        return self._config.get('display', 'background', fallback='images/background.jpg')
 
     @background.setter
     def background(self, value):
@@ -79,11 +79,19 @@ class IoTNodeConfig(object):
     def node_id_override(self):
         return self._config.get('id', 'override', fallback=None)
 
-    # HTTP
     @property
-    def http_client_provider(self):
-        return self._config.get('http', 'client_provider', fallback='requests')
+    def node_id_display(self):
+        return self._config.getboolean('id', 'display', fallback=False)
 
+    @property
+    def node_id_display_frequency(self):
+        return self._config.getint('id', 'display_frequency', fallback=0)
+
+    @property
+    def node_id_display_duration(self):
+        return self._config.getint('id', 'display_duration', fallback=15)
+
+    # HTTP
     @property
     def http_max_concurrent_requests(self):
         return self._config.getint('http', 'max_concurrent_requests', fallback=1)

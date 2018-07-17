@@ -3,6 +3,8 @@
 import netifaces
 import uuid
 
+from twisted.internet import task
+
 from .widgets import ColorLabel
 from .widgets import color_set_alpha
 
@@ -56,13 +58,14 @@ class NodeIDMixin(ConfigMixin, BaseMixin):
         return mac.replace(':', '')
 
 
-class NodeIDGuiMixin(BaseGuiMixin):
+class NodeIDGuiMixin(NodeIDMixin, BaseGuiMixin):
     _gui_nodeid_bgcolor = None
     _gui_nodeid_color = None
 
     def __init__(self, *args, **kwargs):
         super(NodeIDGuiMixin, self).__init__(*args, **kwargs)
         self._gui_id_tag = None
+        self._gui_id_task = None
 
     @property
     def gui_id_tag(self):
@@ -75,9 +78,27 @@ class NodeIDGuiMixin(BaseGuiMixin):
                 width=250, height=50, font_size='18sp',
                 valign='middle', halign='center', **params
             )
-            self.gui_status_stack.add_widget(self._gui_id_tag)
         return self._gui_id_tag
+
+    def gui_id_show(self, duration=None):
+        if not self.gui_id_tag.parent:
+            self.gui_status_stack.add_widget(self.gui_id_tag)
+        if duration:
+            self.reactor.callLater(duration, self.gui_id_hide)
+
+    def gui_id_hide(self):
+        if self.gui_id_tag.parent:
+            self.gui_status_stack.remove_widget(self.gui_id_tag)
 
     def gui_setup(self):
         super(NodeIDGuiMixin, self).gui_setup()
-        # _ = self.gui_id_tag
+        if not self.config.node_id_display:
+            return
+        if self.config.node_id_display_frequency:
+            self._gui_id_task = task.LoopingCall(
+                self.gui_id_show,
+                duration=self.config.node_id_display_duration
+            )
+            self._gui_id_task.start(self.config.node_id_display_frequency)
+        else:
+            self.gui_id_show()

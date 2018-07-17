@@ -11,14 +11,29 @@ from treq.client import HTTPClient
 from .basemixin import BaseMixin
 from .log import NodeLoggingMixin
 from .busy import NodeBusyMixin
-from .http_utils import HTTPError
-from twisted.internet.error import DNSLookupError
-from twisted.web.client import ResponseNeverReceived
 
 from twisted.internet.protocol import Protocol
 from twisted.web.client import ResponseDone
 from twisted.web.http import PotentialDataLoss
 from twisted.internet.defer import Deferred, succeed
+
+from twisted.internet.error import DNSLookupError
+from twisted.internet.error import ConnectError
+from twisted.web.client import ResponseNeverReceived
+
+
+class HTTPError(Exception):
+    def __init__(self, response):
+        self.response = response
+
+
+_http_errors = (HTTPError, DNSLookupError,
+                ConnectError, ResponseNeverReceived)
+
+
+def swallow_http_error(failure):
+    failure.trap(*_http_errors)
+    print("Swallowing HTTP Error")
 
 
 class NoResumeResponseError(Exception):
@@ -67,13 +82,13 @@ def watchful_collect(response, collector, chunktimeout=None, reactor=None):
     return d
 
 
-class TreqHttpClientMixin(NodeBusyMixin, NodeLoggingMixin, BaseMixin):
+class HttpClientMixin(NodeBusyMixin, NodeLoggingMixin, BaseMixin):
     def __init__(self, *args, **kwargs):
         self._http_client = None
         self._http_semaphore = None
         self._http_semaphore_background = None
         self._http_semaphore_download = None
-        super(TreqHttpClientMixin, self).__init__(*args, **kwargs)
+        super(HttpClientMixin, self).__init__(*args, **kwargs)
 
     def http_get(self, url, **kwargs):
         deferred_response = self.http_semaphore.run(
@@ -253,16 +268,4 @@ class TreqHttpClientMixin(NodeBusyMixin, NodeLoggingMixin, BaseMixin):
 
     def stop(self):
         self.log.debug("Closing HTTP client session")
-        super(TreqHttpClientMixin, self).stop()
-
-
-# Note:
-# Treq implementation does not support retries within itself.
-# The associated resource manager implementation demonstrates
-# how retries might be implemented on a per-request basis by
-# the application.
-#
-# If you don't need large file / streaming download but need
-# to support retries, use the requests provider instead.
-
-HttpClientMixin = TreqHttpClientMixin
+        super(HttpClientMixin, self).stop()

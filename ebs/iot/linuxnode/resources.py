@@ -17,7 +17,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm.exc import NoResultFound
 
 from .http import HttpClientMixin
-from .http_utils import _http_errors
+from .http import _http_errors
 
 ASSET = 1
 CONTENT = 2
