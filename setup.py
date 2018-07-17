@@ -39,7 +39,7 @@ setuptools.setup(
     ],
 
     setup_requires=['setuptools_scm'],
-    use_scm_version={'root': '.', 'relative_to': __file__},
+    use_scm_version=True,
 
     classifiers=[
         'Development Status :: 5 - Production/Stable',
