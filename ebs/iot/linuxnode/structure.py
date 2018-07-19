@@ -17,6 +17,7 @@ class BaseGuiStructureMixin(object):
         self._gui_anchor_tr = None
         self._gui_status_stack = None
         self._gui_notification_stack = None
+        self._gui_notification_row = None
         self._gui_debug_stack = None
         super(BaseGuiStructureMixin, self).__init__(*args, **kwargs)
 
@@ -62,6 +63,14 @@ class BaseGuiStructureMixin(object):
                                                        padding='8sp')
             self.gui_anchor_bottom_left.add_widget(self._gui_notification_stack)
         return self._gui_notification_stack
+
+    @property
+    def gui_notification_row(self):
+        if not self._gui_notification_row:
+            self._gui_notification_row = StackLayout(orientation='lr-bt',
+                                                     spacing='8sp')
+            self.gui_notification_stack.add_widget(self._gui_notification_row)
+        return self._gui_notification_row
 
     @property
     def gui_debug_stack(self):

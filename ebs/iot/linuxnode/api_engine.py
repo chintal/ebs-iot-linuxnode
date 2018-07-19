@@ -1,11 +1,14 @@
 
+
+import os
 from twisted.internet.task import LoopingCall
 from twisted.internet.defer import succeed
 
+from .widgets import BleedImage
+from .basemixin import BaseGuiMixin
 from .log import NodeLoggingMixin
 from .http import HttpClientMixin
 from .http import HTTPError
-from .nodeid import NodeIDMixin
 
 
 class BaseApiEngineMixin(NodeLoggingMixin):
@@ -17,6 +20,7 @@ class BaseApiEngineMixin(NodeLoggingMixin):
         super(BaseApiEngineMixin, self).__init__(*args, **kwargs)
         self._api_reconnect_task = None
         self._api_engine_active = False
+        self._api_endpoint_connected = None
 
     """ API Task Management """
     @property
@@ -54,11 +58,14 @@ class BaseApiEngineMixin(NodeLoggingMixin):
 
         def _made_connection(_):
             self.log.debug("Made connection")
+            self.api_endpoint_connected = True
             self._api_engine_active = True
             if self.api_reconnect_task.running:
                 self.api_reconnect_task.stop()
 
         def _enter_reconnection_cycle(failure):
+            self.log.error("Can't connect to API endpoint")
+            self.api_endpoint_connected = False
             if not self.api_reconnect_task.running:
                 self.api_engine_reconnect()
             return failure
@@ -72,6 +79,7 @@ class BaseApiEngineMixin(NodeLoggingMixin):
             if self.api_reconnect_task.running:
                 return
             else:
+                print("Returning failure ", failure)
                 return failure
 
         d.addCallbacks(
@@ -80,8 +88,17 @@ class BaseApiEngineMixin(NodeLoggingMixin):
         )
         return d
 
+    @property
+    def api_endpoint_connected(self):
+        return self._api_endpoint_connected
+
+    @api_endpoint_connected.setter
+    def api_endpoint_connected(self, value):
+        self._api_endpoint_connected = value
+
     def api_engine_reconnect(self):
         if self._api_engine_active:
+            self.api_endpoint_connected = False
             self.log.info("Lost connection to server. Attempting to reconnect.")
         self._api_engine_active = False
         if not self.api_reconnect_task.running:
@@ -115,6 +132,47 @@ class HttpApiEngineMixin(BaseApiEngineMixin, HttpClientMixin):
     def __init__(self, *args, **kwargs):
         super(HttpApiEngineMixin, self).__init__(*args, **kwargs)
         self._api_token = None
+        self._api_internet_connected = None
+
+    def api_engine_activate(self):
+        # Probe for internet
+        d = self.http_get('https://www.google.com')
+
+        def _made_connection(_):
+            self.log.debug("Have Internet Connection")
+            self.api_internet_connected = True
+
+        def _enter_reconnection_cycle(failure):
+            self.log.error("No Internet!")
+            self.api_internet_connected = False
+            if not self.api_reconnect_task.running:
+                self.api_engine_reconnect()
+            return failure
+
+        d.addCallbacks(
+            _made_connection,
+            _enter_reconnection_cycle
+        )
+
+        def _error_handler(failure):
+            if self.api_reconnect_task.running:
+                return
+            else:
+                return failure
+
+        d.addCallbacks(
+            lambda _: BaseApiEngineMixin.api_engine_activate(self),
+            _error_handler
+        )
+        return d
+
+    @property
+    def api_internet_connected(self):
+        return self._api_internet_connected
+
+    @api_internet_connected.setter
+    def api_internet_connected(self, value):
+        self._api_internet_connected = value
 
     @property
     def api_token(self):
@@ -153,3 +211,75 @@ class HttpApiEngineMixin(BaseApiEngineMixin, HttpClientMixin):
 
     def stop(self):
         super(HttpApiEngineMixin, self).stop()
+
+
+class HttpApiEngineGuiMixin(HttpApiEngineMixin, BaseGuiMixin):
+    def __init__(self, *args, **kwargs):
+        super(HttpApiEngineGuiMixin, self).__init__(*args, **kwargs)
+        self._api_internet_indicator = None
+        self._api_connected_indicator = None
+        self._api_endpoint_indicator = None
+
+    @property
+    def api_internet_connected(self):
+        return self._api_internet_connected
+
+    @api_internet_connected.setter
+    def api_internet_connected(self, value):
+        if not value:
+            self._api_internet_indicator_show()
+        else:
+            self._api_internet_indicator_clear()
+        self._api_internet_connected = value
+
+    def _api_internet_indicator_show(self):
+        if not self.api_internet_indicator.parent:
+            self.gui_notification_row.add_widget(self.api_internet_indicator)
+
+    def _api_internet_indicator_clear(self):
+        if self.api_internet_indicator.parent:
+            self.api_internet_indicator.parent.remove_widget(self.api_internet_indicator)
+
+    @property
+    def api_internet_indicator(self):
+        if not self._api_internet_indicator:
+            _root = os.path.abspath(os.path.dirname(__file__))
+            _source = os.path.join(_root, 'images', 'no-internet.png')
+            self._api_internet_indicator = BleedImage(
+                source=_source, pos_hint={'left': 1},
+                size_hint=(None, None), height=50, width=50,
+                bgcolor=(0xff/255., 0x00/255., 0x00/255., 0.3),
+            )
+        return self._api_internet_indicator
+
+    @property
+    def api_endpoint_connected(self):
+        return self._api_internet_connected
+
+    @api_endpoint_connected.setter
+    def api_endpoint_connected(self, value):
+        if not value:
+            self._api_endpoint_indicator_show()
+        else:
+            self._api_endpoint_indicator_clear()
+        self._api_endpoint_connected = value
+
+    def _api_endpoint_indicator_show(self):
+        if not self.api_endpoint_indicator.parent:
+            self.gui_notification_row.add_widget(self.api_endpoint_indicator)
+
+    def _api_endpoint_indicator_clear(self):
+        if self.api_endpoint_indicator.parent:
+            self.api_endpoint_indicator.parent.remove_widget(self.api_endpoint_indicator)
+
+    @property
+    def api_endpoint_indicator(self):
+        if not self._api_endpoint_indicator:
+            _root = os.path.abspath(os.path.dirname(__file__))
+            _source = os.path.join(_root, 'images', 'no-server.png')
+            self._api_endpoint_indicator = BleedImage(
+                source=_source, pos_hint={'left': 1},
+                size_hint=(None, None), height=50, width=50,
+                bgcolor=(0xff/255., 0x00/255., 0x00/255., 0.3),
+            )
+        return self._api_endpoint_indicator

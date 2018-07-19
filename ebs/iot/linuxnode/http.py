@@ -17,6 +17,7 @@ from twisted.web.client import ResponseDone
 from twisted.web.http import PotentialDataLoss
 from twisted.internet.defer import Deferred, succeed
 
+from twisted.internet.error import TimeoutError
 from twisted.internet.error import DNSLookupError
 from twisted.internet.error import ConnectError
 from twisted.web.client import ResponseNeverReceived
@@ -27,7 +28,7 @@ class HTTPError(Exception):
         self.response = response
 
 
-_http_errors = (HTTPError, DNSLookupError,
+_http_errors = (HTTPError, DNSLookupError, TimeoutError,
                 ConnectError, ResponseNeverReceived)
 
 

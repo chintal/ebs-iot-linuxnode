@@ -101,4 +101,4 @@ class NodeIDGuiMixin(NodeIDMixin, BaseGuiMixin):
             )
             self._gui_id_task.start(self.config.node_id_display_frequency)
         else:
-            self.gui_id_show()
+            self.gui_id_show(duration=self.config.node_id_display_duration)
