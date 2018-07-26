@@ -33,6 +33,8 @@ setuptools.setup(
     long_description='',
 
     packages=setuptools.find_packages(),
+    package_data={'ebs.iot.signagenode': ['images/no-internet.png',
+                                          'images/no-server.png']},
 
     install_requires=_requires,
     dependency_links=[
