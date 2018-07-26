@@ -10,11 +10,12 @@ from .log import NodeLoggingMixin
 from .nodeid import NodeIDMixin
 from .busy import NodeBusyMixin
 from .http import HttpClientMixin
+from .shell import BaseShellMixin
 
 from .resources import ResourceManagerMixin
 
 
-class BaseIoTNode(ResourceManagerMixin, HttpClientMixin,
+class BaseIoTNode(ResourceManagerMixin, HttpClientMixin, BaseShellMixin,
                   NodeBusyMixin, NodeLoggingMixin, NodeIDMixin):
     _has_gui = False
 

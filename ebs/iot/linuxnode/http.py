@@ -21,6 +21,7 @@ from twisted.internet.error import TimeoutError
 from twisted.internet.error import DNSLookupError
 from twisted.internet.error import ConnectError
 from twisted.web.client import ResponseNeverReceived
+from .shell.network import NetworkInfoMixin
 
 
 class HTTPError(Exception):
@@ -79,11 +80,14 @@ def watchful_collect(response, collector, chunktimeout=None, reactor=None):
         return succeed(None)
 
     d = Deferred()
-    response.deliverBody(WatchfulBodyCollector(d, collector, chunktimeout, reactor))
+    response.deliverBody(
+        WatchfulBodyCollector(d, collector, chunktimeout, reactor)
+    )
     return d
 
 
-class HttpClientMixin(NodeBusyMixin, NodeLoggingMixin, BaseMixin):
+class HttpClientMixin(NetworkInfoMixin, NodeBusyMixin,
+                      NodeLoggingMixin, BaseMixin):
     def __init__(self, *args, **kwargs):
         self._http_client = None
         self._http_semaphore = None

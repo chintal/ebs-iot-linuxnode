@@ -4,6 +4,7 @@ from kivy.uix.anchorlayout import AnchorLayout
 from kivy.uix.stacklayout import StackLayout
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.gridlayout import GridLayout
 
 
 class BaseGuiStructureMixin(object):
@@ -59,8 +60,14 @@ class BaseGuiStructureMixin(object):
     @property
     def gui_notification_stack(self):
         if not self._gui_notification_stack:
-            self._gui_notification_stack = StackLayout(orientation='bt-lr',
-                                                       padding='8sp')
+            self._gui_notification_stack = GridLayout(cols=1,
+                                                      padding='8sp',
+                                                      spacing='8sp',
+                                                      size_hint_y=None,)
+
+            def _set_height(_, mheight):
+                self.gui_notification_stack.height = mheight
+            self.gui_notification_stack.bind(minimum_height=_set_height)
             self.gui_anchor_bottom_left.add_widget(self._gui_notification_stack)
         return self._gui_notification_stack
 

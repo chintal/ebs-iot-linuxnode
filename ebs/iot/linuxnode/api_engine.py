@@ -5,6 +5,7 @@ from twisted.internet.task import LoopingCall
 from twisted.internet.defer import succeed
 
 from .widgets import BleedImage
+from .widgets import ColorLabel
 from .basemixin import BaseGuiMixin
 from .log import NodeLoggingMixin
 from .http import HttpClientMixin
@@ -132,19 +133,30 @@ class HttpApiEngineMixin(BaseApiEngineMixin, HttpClientMixin):
     def __init__(self, *args, **kwargs):
         super(HttpApiEngineMixin, self).__init__(*args, **kwargs)
         self._api_token = None
-        self._api_internet_connected = None
+        self._internet_connected = None
+        self._internet_link = None
 
     def api_engine_activate(self):
         # Probe for internet
         d = self.http_get('https://www.google.com')
 
+        def _display_internet_info(maybe_failure):
+            ld = self.network_info
+
+            def _set_internet_link(l):
+                if l:
+                    self.internet_link = l.decode('utf-8')
+            ld.addCallback(_set_internet_link)
+            return maybe_failure
+        d.addBoth(_display_internet_info)
+
         def _made_connection(_):
             self.log.debug("Have Internet Connection")
-            self.api_internet_connected = True
+            self.internet_connected = True
 
         def _enter_reconnection_cycle(failure):
             self.log.error("No Internet!")
-            self.api_internet_connected = False
+            self.internet_connected = False
             if not self.api_reconnect_task.running:
                 self.api_engine_reconnect()
             return failure
@@ -167,12 +179,20 @@ class HttpApiEngineMixin(BaseApiEngineMixin, HttpClientMixin):
         return d
 
     @property
-    def api_internet_connected(self):
-        return self._api_internet_connected
+    def internet_link(self):
+        return self._internet_link
 
-    @api_internet_connected.setter
-    def api_internet_connected(self, value):
-        self._api_internet_connected = value
+    @internet_link.setter
+    def internet_link(self, value):
+        self._internet_link = value
+
+    @property
+    def internet_connected(self):
+        return self._internet_connected
+
+    @internet_connected.setter
+    def internet_connected(self, value):
+        self._internet_connected = value
 
     @property
     def api_token(self):
@@ -216,41 +236,82 @@ class HttpApiEngineMixin(BaseApiEngineMixin, HttpClientMixin):
 class HttpApiEngineGuiMixin(HttpApiEngineMixin, BaseGuiMixin):
     def __init__(self, *args, **kwargs):
         super(HttpApiEngineGuiMixin, self).__init__(*args, **kwargs)
-        self._api_internet_indicator = None
+        self._internet_indicator = None
+        self._internet_link_indicator = None
         self._api_connected_indicator = None
         self._api_endpoint_indicator = None
 
     @property
-    def api_internet_connected(self):
-        return self._api_internet_connected
+    def internet_link(self):
+        return self._internet_link
 
-    @api_internet_connected.setter
-    def api_internet_connected(self, value):
-        if not value:
-            self._api_internet_indicator_show()
+    @internet_link.setter
+    def internet_link(self, value):
+        if value:
+            self._internet_link = value.strip()
+            self._internet_link_indicator_show()
         else:
-            self._api_internet_indicator_clear()
-        self._api_internet_connected = value
-
-    def _api_internet_indicator_show(self):
-        if not self.api_internet_indicator.parent:
-            self.gui_notification_row.add_widget(self.api_internet_indicator)
-
-    def _api_internet_indicator_clear(self):
-        if self.api_internet_indicator.parent:
-            self.api_internet_indicator.parent.remove_widget(self.api_internet_indicator)
+            self._internet_link = None
 
     @property
-    def api_internet_indicator(self):
-        if not self._api_internet_indicator:
+    def internet_link_indicator(self):
+        if not self._internet_link_indicator:
+            params = {'bgcolor': (0xff/255., 0x00/255., 0x00/255., 0.3),
+                      'color': [1, 1, 1, 1]}
+            self._internet_link_indicator = ColorLabel(
+                text=self._internet_link, size_hint=(None, None),
+                height=50, font_size='14sp',
+                valign='middle', halign='center', **params
+            )
+
+            def _set_label_width(_, texture_size):
+                self._internet_link_indicator.width = texture_size
+            self._internet_link_indicator.bind(text_size=_set_label_width)
+        return self._internet_link_indicator
+
+    def _internet_link_indicator_show(self, duration=5):
+        _ = self.internet_link_indicator
+        if not self._internet_link_indicator.parent:
+            self.gui_notification_stack.add_widget(self._internet_link_indicator)
+        if duration:
+            self.reactor.callLater(duration, self._internet_link_indicator_clear)
+
+    def _internet_link_indicator_clear(self):
+        if self._internet_link_indicator and self._internet_link_indicator.parent:
+            self.gui_notification_stack.remove_widget(self._internet_link_indicator)
+        self._internet_link_indicator = None
+
+    @property
+    def internet_connected(self):
+        return self._internet_connected
+
+    @internet_connected.setter
+    def internet_connected(self, value):
+        if not value:
+            self._internet_indicator_show()
+        else:
+            self._internet_indicator_clear()
+        self._internet_connected = value
+
+    def _internet_indicator_show(self):
+        if not self.internet_indicator.parent:
+            self.gui_notification_row.add_widget(self.internet_indicator)
+
+    def _internet_indicator_clear(self):
+        if self.internet_indicator.parent:
+            self.internet_indicator.parent.remove_widget(self.internet_indicator)
+
+    @property
+    def internet_indicator(self):
+        if not self._internet_indicator:
             _root = os.path.abspath(os.path.dirname(__file__))
             _source = os.path.join(_root, 'images', 'no-internet.png')
-            self._api_internet_indicator = BleedImage(
+            self._internet_indicator = BleedImage(
                 source=_source, pos_hint={'left': 1},
                 size_hint=(None, None), height=50, width=50,
                 bgcolor=(0xff/255., 0x00/255., 0x00/255., 0.3),
             )
-        return self._api_internet_indicator
+        return self._internet_indicator
 
     @property
     def api_endpoint_connected(self):
