@@ -79,6 +79,10 @@ class BaseGuiStructureMixin(object):
             self.gui_notification_stack.add_widget(self._gui_notification_row)
         return self._gui_notification_row
 
+    def gui_notification_update(self):
+        self.gui_notification_row.do_layout()
+        self.gui_notification_stack.do_layout()
+
     @property
     def gui_debug_stack(self):
         if not self._gui_debug_stack:

@@ -273,12 +273,14 @@ class HttpApiEngineGuiMixin(HttpApiEngineMixin, BaseGuiMixin):
         _ = self.internet_link_indicator
         if not self._internet_link_indicator.parent:
             self.gui_notification_stack.add_widget(self._internet_link_indicator)
+            self.gui_notification_update()
         if duration:
             self.reactor.callLater(duration, self._internet_link_indicator_clear)
 
     def _internet_link_indicator_clear(self):
         if self._internet_link_indicator and self._internet_link_indicator.parent:
             self.gui_notification_stack.remove_widget(self._internet_link_indicator)
+            self.gui_notification_update()
         self._internet_link_indicator = None
 
     @property
@@ -296,10 +298,12 @@ class HttpApiEngineGuiMixin(HttpApiEngineMixin, BaseGuiMixin):
     def _internet_indicator_show(self):
         if not self.internet_indicator.parent:
             self.gui_notification_row.add_widget(self.internet_indicator)
+            self.gui_notification_update()
 
     def _internet_indicator_clear(self):
         if self.internet_indicator.parent:
             self.internet_indicator.parent.remove_widget(self.internet_indicator)
+            self.gui_notification_update()
 
     @property
     def internet_indicator(self):
@@ -328,10 +332,12 @@ class HttpApiEngineGuiMixin(HttpApiEngineMixin, BaseGuiMixin):
     def _api_endpoint_indicator_show(self):
         if not self.api_endpoint_indicator.parent:
             self.gui_notification_row.add_widget(self.api_endpoint_indicator)
+            self.gui_notification_update()
 
     def _api_endpoint_indicator_clear(self):
         if self.api_endpoint_indicator.parent:
             self.api_endpoint_indicator.parent.remove_widget(self.api_endpoint_indicator)
+            self.gui_notification_update()
 
     @property
     def api_endpoint_indicator(self):

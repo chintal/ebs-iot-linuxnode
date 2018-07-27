@@ -59,11 +59,13 @@ class BusySpinnerGuiMixin(NodeBusyMixin, BaseGuiMixin):
         parent = self.gui_busy_spinner.parent
         if not parent:
             self.gui_notification_row.add_widget(self.gui_busy_spinner)
+            self.gui_notification_update()
 
     def _gui_busy_clear(self):
         parent = self.gui_busy_spinner.parent
         if parent:
             parent.remove_widget(self.gui_busy_spinner)
+            self.gui_notification_update()
 
     @property
     def gui_busy_spinner(self):
