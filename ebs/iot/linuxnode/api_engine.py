@@ -265,8 +265,8 @@ class HttpApiEngineGuiMixin(HttpApiEngineMixin, BaseGuiMixin):
             )
 
             def _set_label_width(_, texture_size):
-                self._internet_link_indicator.width = texture_size
-            self._internet_link_indicator.bind(text_size=_set_label_width)
+                self._internet_link_indicator.width = texture_size[0] + 20
+            self._internet_link_indicator.bind(texture_size=_set_label_width)
         return self._internet_link_indicator
 
     def _internet_link_indicator_show(self, duration=5):
