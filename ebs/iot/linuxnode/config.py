@@ -49,7 +49,7 @@ class IoTNodeConfig(object):
 
     @property
     def background(self):
-        return self._config.get('display', 'background', fallback='images/background.jpg')
+        return self._config.get('display', 'background', fallback='images/background.png')
 
     @background.setter
     def background(self, value):
