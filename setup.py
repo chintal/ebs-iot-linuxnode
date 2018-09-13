@@ -20,6 +20,7 @@ _requires = [
 
     # Event Manager
     'cached_property',
+    'pqueue'
 ]
 
 setuptools.setup(
