@@ -4,8 +4,8 @@ import os
 from twisted.internet.defer import Deferred
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.video import Video
-from kivy.uix.image import Image
 
+from .widgets import BleedImage
 from .log import NodeLoggingMixin
 from .background import OverlayWindowGuiMixin
 
@@ -21,7 +21,7 @@ class MediaPlayerBusy(Exception):
 
 
 class MediaPlayerMixin(NodeLoggingMixin):
-    _media_extentions_image = ['.png', '.jpg', '.bmp', '.gif', 'jpeg']
+    _media_extentions_image = ['.png', '.jpg', '.bmp', '.gif', '.jpeg']
     _media_extentions_video = []
 
     def __init__(self, *args, **kwargs):
@@ -52,12 +52,12 @@ class MediaPlayerMixin(NodeLoggingMixin):
             self._end_call = self.reactor.callLater(duration, self.media_stop)
         self.gui_bg_pause()
         if os.path.splitext(content)[1] in self._media_extentions_image:
-            # self.log.info("Showing image {filename}",
-            #               filename=os.path.basename(content))
+            self.log.debug("Showing image {filename}",
+                           filename=os.path.basename(content))
             self._media_play_image(content)
         else:
-            # self.log.info("Starting video {filename}",
-            #               filename=os.path.basename(content))
+            self.log.debug("Starting video {filename}",
+                           filename=os.path.basename(content))
             self._media_play_video(content, loop)
         self._media_player_deferred = Deferred()
         self._mediaplayer_now_playing = os.path.basename(content)
@@ -97,7 +97,7 @@ class MediaPlayerGuiMixin(OverlayWindowGuiMixin):
         self._gui_mediaview = None
 
     def _media_play_image(self, filepath):
-        self._media_playing = Image(source=filepath)
+        self._media_playing = BleedImage(source=filepath)
         self.gui_mediaview.add_widget(self._media_playing)
 
     def _media_play_video(self, *args, **kwargs):
@@ -129,6 +129,7 @@ class MediaPlayerGuiMixin(OverlayWindowGuiMixin):
         dispmanx_layer = self.config.video_dispmanx_layer
 
     def media_stop(self, forced=False):
+        print("Stopping Media : {0}".format(self._media_playing))
         if isinstance(self._media_playing, Video):
             self._media_playing.unload()
         if isinstance(self._media_playing, Image):

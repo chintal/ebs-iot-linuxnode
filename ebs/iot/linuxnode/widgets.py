@@ -1,6 +1,7 @@
 
 
 import re
+from PIL import Image as PILImage
 from itertools import chain
 from colorthief import ColorThief
 
@@ -17,6 +18,10 @@ from kivy.properties import ListProperty
 from kivy.properties import NumericProperty
 from kivy.graphics.texture import Texture
 from kivy.animation import Animation
+
+from kivy.graphics.opengl import glGetIntegerv
+from kivy.graphics.opengl import GL_MAX_TEXTURE_SIZE
+_image_max_size = glGetIntegerv(GL_MAX_TEXTURE_SIZE)[0]
 
 
 class BackgroundColorMixin(object):
@@ -141,10 +146,29 @@ class MarqueeLabel(ScrollView):
         self.clear_widgets()
 
 
-class BleedImage(BackgroundColorMixin, Image):
+class SizeProofImage(Image):
+    def __init__(self, **kwargs):
+        source = kwargs.get('source', None)
+        if source:
+            PILImage.MAX_IMAGE_PIXELS = None
+            im = PILImage.open(source)
+            size = im.size
+            sf = max([float(s) / _image_max_size for s in size])
+            if sf > 1:
+                target = [int(s / sf) for s in size]
+                print("Resizing image {1} to {2} {0}"
+                      "".format(source, size, target))
+                im = im.resize(target, PILImage.ANTIALIAS)
+                im.save(source)
+            im.close()
+            del im
+        Image.__init__(self, **kwargs)
+
+
+class BleedImage(BackgroundColorMixin, SizeProofImage):
     def __init__(self, **kwargs):
         bgcolor = kwargs.pop('bgcolor', 'auto')
-        Image.__init__(self, **kwargs)
+        SizeProofImage.__init__(self, **kwargs)
         BackgroundColorMixin.__init__(self)
         if bgcolor == 'auto':
             self._autoset_bg_color()

@@ -33,6 +33,10 @@ class ApiPersistentActionQueue(object):
         return succeed(True)
 
     def enqueue_action(self, api_func_name, *args):
+        self._api_engine.log.info(
+            "Enqueuing API action to disk : {func_name}, {args}",
+            func_name=api_func_name, args=args
+        )
         self.api_queue.put((api_func_name, args))
 
     @property
