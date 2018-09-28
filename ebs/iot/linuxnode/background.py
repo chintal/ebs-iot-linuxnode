@@ -77,7 +77,11 @@ class BackgroundGuiMixin(ConfigMixin, BaseGuiMixin):
             self._bg_video = None
         self._bg_video = Video(
             source=value, state='play',
-            eos='loop', allow_stretch=True
+            allow_stretch=True,
+            # FIXME This should and used to work, but broke for no apparent
+            # reason. Relying on the _when_done() instead. This should be
+            # tracked down and kivy bug should probably be filed.
+            # eos='loop'
         )
 
         def _when_done(*_):
