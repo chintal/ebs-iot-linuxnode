@@ -132,7 +132,7 @@ class MediaPlayerGuiMixin(OverlayWindowGuiMixin):
         print("Stopping Media : {0}".format(self._media_playing))
         if isinstance(self._media_playing, Video):
             self._media_playing.unload()
-        if isinstance(self._media_playing, Image):
+        if isinstance(self._media_playing, BleedImage):
             pass
         self.gui_mediaview.clear_widgets()
         MediaPlayerMixin.media_stop(self, forced=forced)
