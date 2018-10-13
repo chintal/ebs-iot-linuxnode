@@ -21,15 +21,16 @@ class BackgroundGuiMixin(ConfigMixin, BaseGuiMixin):
         super(BackgroundGuiMixin, self).__init__(*args, **kwargs)
 
     def background_set(self, fpath):
-        if not os.path.exists(fpath):
-            fpath = 'images/background.png'
+        if not fpath or not os.path.exists(fpath):
+            fpath = None
 
         if self.config.background != fpath:
             old_bg = os.path.basename(urlparse(self.config.background).path)
             if self.resource_manager.has(old_bg):
                 self.resource_manager.remove(old_bg)
             self.config.background = fpath
-            self.gui_bg = fpath
+
+        self.gui_bg_update()
 
     @property
     def gui_bg_container(self):
@@ -104,6 +105,9 @@ class BackgroundGuiMixin(ConfigMixin, BaseGuiMixin):
             self.gui_bg_image = value
         else:
             self.gui_bg_video = value
+
+    def gui_bg_update(self):
+        self.gui_bg = self.config.background
 
     def gui_bg_pause(self):
         self.gui_root.remove_widget(self._bg_container)
