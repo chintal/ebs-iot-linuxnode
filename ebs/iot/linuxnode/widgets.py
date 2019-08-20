@@ -165,6 +165,10 @@ class SizeProofImage(Image):
         Image.__init__(self, **kwargs)
 
 
+class StandardImage(SizeProofImage):
+    pass
+
+
 class BleedImage(BackgroundColorMixin, SizeProofImage):
     def __init__(self, **kwargs):
         bgcolor = kwargs.pop('bgcolor', 'auto')

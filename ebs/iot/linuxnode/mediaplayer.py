@@ -5,7 +5,7 @@ from twisted.internet.defer import Deferred
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.video import Video
 
-from .widgets import BleedImage
+from .widgets import StandardImage
 from .log import NodeLoggingMixin
 from .background import OverlayWindowGuiMixin
 
@@ -97,7 +97,9 @@ class MediaPlayerGuiMixin(OverlayWindowGuiMixin):
         self._gui_mediaview = None
 
     def _media_play_image(self, filepath):
-        self._media_playing = BleedImage(source=filepath)
+        self._media_playing = StandardImage(source=filepath,
+                                            allow_stretch=True,
+                                            keep_ratio=True)
         self.gui_mediaview.add_widget(self._media_playing)
 
     def _media_play_video(self, *args, **kwargs):
@@ -132,7 +134,7 @@ class MediaPlayerGuiMixin(OverlayWindowGuiMixin):
         print("Stopping Media : {0}".format(self._media_playing))
         if isinstance(self._media_playing, Video):
             self._media_playing.unload()
-        if isinstance(self._media_playing, BleedImage):
+        if isinstance(self._media_playing, StandardImage):
             pass
         self.gui_mediaview.clear_widgets()
         MediaPlayerMixin.media_stop(self, forced=forced)

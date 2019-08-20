@@ -1,6 +1,5 @@
 
 from twisted.internet.defer import Deferred
-from twisted.internet.defer import failure
 
 from .widgets import color_set_alpha
 from .widgets import MarqueeLabel
