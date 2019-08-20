@@ -58,6 +58,13 @@ class CacheableResource(object):
     def rtype(self):
         return self._rtype
 
+    @rtype.setter
+    def rtype(self, value):
+        if not value:
+            value = 0
+        if value in [0, ASSET, CONTENT]:
+            self._rtype = value
+
     @property
     def cache_path(self):
         if not self._cache_path:

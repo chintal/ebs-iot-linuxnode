@@ -20,6 +20,7 @@ class BaseGuiStructureMixin(object):
         self._gui_notification_stack = None
         self._gui_notification_row = None
         self._gui_debug_stack = None
+        self._gui_content_root = None
         super(BaseGuiStructureMixin, self).__init__(*args, **kwargs)
 
     @property
@@ -128,3 +129,10 @@ class BaseGuiStructureMixin(object):
         if not self._gui_root:
             self._gui_root = FloatLayout()
         return self._gui_root
+
+    @property
+    def gui_content_root(self):
+        if not self._gui_content_root:
+            self._gui_content_root = BoxLayout(orientation='horizontal')
+            self._gui_root.add_widget(self._gui_content_root)
+        return self._gui_content_root
