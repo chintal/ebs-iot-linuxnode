@@ -12,7 +12,8 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm.exc import NoResultFound
 
-from .basenode import BaseIoTNode
+from .basemixin import BaseMixin
+from .basemixin import BaseGuiMixin
 from .resources import ASSET
 
 WEBRESOURCE = 1
@@ -298,7 +299,7 @@ class ResourceGalleryManager(GalleryManager):
         session = self.db()
         try:
             target = self.db_get_resources(session, seq=self.current_seq).one()
-            print("Triggering transition to {0} ".format(target))
+            # print("Triggering transition to {0} ".format(target))
         except:
             session.rollback()
         finally:
@@ -310,7 +311,7 @@ class ResourceGalleryManager(GalleryManager):
         self.step()
 
 
-class GalleryMixin(BaseIoTNode):
+class GalleryMixin(BaseMixin):
     def __init__(self, *args, **kwargs):
         self._gallery_managers = {}
         super(GalleryMixin, self).__init__(*args, **kwargs)
@@ -330,3 +331,11 @@ class GalleryMixin(BaseIoTNode):
 
     def api_text_success(self, events):
         raise NotImplementedError
+
+
+class GalleryGuiMixin(GalleryMixin, BaseGuiMixin):
+    def __init__(self, *args, **kwargs):
+        super(GalleryGuiMixin, self).__init__(*args, **kwargs)
+
+    def gui_setup(self):
+        super(GalleryGuiMixin, self).gui_setup()

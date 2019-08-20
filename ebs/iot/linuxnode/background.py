@@ -36,7 +36,7 @@ class BackgroundGuiMixin(ConfigMixin, BaseGuiMixin):
     def gui_bg_container(self):
         if self._bg_container is None:
             self._bg_container = BoxLayout()
-            self.gui_root.add_widget(self._bg_container)
+            self.gui_main_content.add_widget(self._bg_container)
         return self._bg_container
 
     @property
@@ -110,13 +110,13 @@ class BackgroundGuiMixin(ConfigMixin, BaseGuiMixin):
         self.gui_bg = self.config.background
 
     def gui_bg_pause(self):
-        self.gui_root.remove_widget(self._bg_container)
+        self.gui_main_content.remove_widget(self._bg_container)
         if isinstance(self.gui_bg, Video):
             self.gui_bg.state = 'pause'
 
     def gui_bg_resume(self):
         if not self._bg_container.parent:
-            self.gui_root.add_widget(self._bg_container, len(self.gui_root.children))
+            self.gui_main_content.add_widget(self._bg_container, len(self.gui_main_content.children))
         if isinstance(self.gui_bg, Video):
             self.gui_bg.state = 'play'
 

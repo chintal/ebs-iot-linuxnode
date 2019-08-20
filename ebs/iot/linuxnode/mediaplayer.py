@@ -141,8 +141,7 @@ class MediaPlayerGuiMixin(OverlayWindowGuiMixin):
     def gui_mediaview(self):
         if self._gui_mediaview is None:
             self._gui_mediaview = BoxLayout()
-            self.gui_root.add_widget(self._gui_mediaview,
-                                     len(self.gui_root.children) - 1)
+            self.gui_main_content.add_widget(self._gui_mediaview)
         return self._gui_mediaview
 
     def gui_setup(self):

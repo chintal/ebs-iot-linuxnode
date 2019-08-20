@@ -1,5 +1,4 @@
 
-
 from kivy.uix.anchorlayout import AnchorLayout
 from kivy.uix.stacklayout import StackLayout
 from kivy.uix.floatlayout import FloatLayout
@@ -21,6 +20,9 @@ class BaseGuiStructureMixin(object):
         self._gui_notification_row = None
         self._gui_debug_stack = None
         self._gui_content_root = None
+        self._gui_main_content = None
+        self._gui_sidebar_right = None
+        self._gui_sidebar_left = None
         super(BaseGuiStructureMixin, self).__init__(*args, **kwargs)
 
     @property
@@ -93,13 +95,6 @@ class BaseGuiStructureMixin(object):
         return self._gui_debug_stack
 
     @property
-    def gui_primary_root(self):
-        if not self._gui_primary_root:
-            self._gui_primary_root = FloatLayout()
-            self.gui_structure_root.add_widget(self._gui_primary_root)
-        return self._gui_primary_root
-
-    @property
     def gui_footer(self):
         if not self._gui_footer:
             _ = self.gui_primary_root
@@ -118,6 +113,13 @@ class BaseGuiStructureMixin(object):
             self.gui_structure_root.remove_widget(self._gui_footer)
 
     @property
+    def gui_primary_root(self):
+        if not self._gui_primary_root:
+            self._gui_primary_root = FloatLayout()
+            self.gui_structure_root.add_widget(self._gui_primary_root)
+        return self._gui_primary_root
+
+    @property
     def gui_structure_root(self):
         if not self._gui_structure_root:
             self._gui_structure_root = BoxLayout(orientation='vertical')
@@ -125,14 +127,58 @@ class BaseGuiStructureMixin(object):
         return self._gui_structure_root
 
     @property
+    def gui_main_content(self):
+        if not self._gui_main_content:
+            self._gui_main_content = FloatLayout()
+            self.gui_content_root.add_widget(self._gui_main_content)
+        return self._gui_main_content
+
+    # @property
+    # def gui_sidebar_left(self):
+    #     if not self._gui_sidebar_left:
+    #         self._gui_sidebar_left = FloatLayout(size_hint=((0.28/0.72), 1))
+    #     return self._gui_sidebar_left
+    #
+    # def gui_sidebar_left_show(self):
+    #     if not self.gui_sidebar_left.parent:
+    #         print(self.gui_content_root.children)
+    #         self.gui_content_root.add_widget(
+    #             self.gui_sidebar_left,
+    #             index=len(self.gui_content_root.children)
+    #         )
+    #         self.gui_content_root.do_layout()
+    #         print(self.gui_content_root.children)
+    #
+    # def gui_sidebar_left_hide(self):
+    #     if self.gui_sidebar_left.parent:
+    #         self.gui_content_root.remove_widget(self.gui_sidebar_left)
+
+    @property
+    def gui_sidebar_right(self):
+        if not self._gui_sidebar_right:
+            self._gui_sidebar_right = FloatLayout(size_hint=((0.28/0.72), 1))
+        return self._gui_sidebar_right
+
+    def gui_sidebar_right_show(self):
+        if not self.gui_sidebar_right.parent:
+            self.gui_content_root.add_widget(self.gui_sidebar_right)
+            self.gui_content_root.do_layout()
+
+    def gui_sidebar_right_hide(self):
+        if self.gui_sidebar_right.parent:
+            self.gui_content_root.remove_widget(self.gui_sidebar_right)
+
+    @property
+    def gui_content_root(self):
+        if not self._gui_content_root:
+            self._gui_content_root = GridLayout(rows=1, spacing=10)
+            self.gui_root.add_widget(self._gui_content_root,
+                                     len(self.gui_root.children) - 1)
+        return self._gui_content_root
+
+    @property
     def gui_root(self):
         if not self._gui_root:
             self._gui_root = FloatLayout()
         return self._gui_root
 
-    @property
-    def gui_content_root(self):
-        if not self._gui_content_root:
-            self._gui_content_root = BoxLayout(orientation='horizontal')
-            self._gui_root.add_widget(self._gui_content_root)
-        return self._gui_content_root
