@@ -121,7 +121,7 @@ class GalleryResource(object):
 
 
 class GalleryManager(object):
-    def __init__(self, node, gmid, default_duration=5):
+    def __init__(self, node, gmid, default_duration=10):
         # TODO Extract db layer from here and EM into reusable format?
         self._gmid = gmid
         self._node = node
@@ -337,15 +337,8 @@ class GalleryMixin(BaseMixin):
     def gallery_load(self, gmid, items):
         self.gallery_manager(gmid).load(items)
 
-    @property
-    def _cache_trim_exclusions(self):
-        return [self.gallery_manager(WEBRESOURCE).resources]
-
-    def api_media_success(self, events):
-        raise NotImplementedError
-
-    def api_text_success(self, events):
-        raise NotImplementedError
+    def gallery_start(self):
+        self.gallery_manager(WEBRESOURCE).start()
 
 
 class GalleryGuiMixin(GalleryMixin, BaseGuiMixin):
@@ -371,6 +364,10 @@ class GalleryGuiMixin(GalleryMixin, BaseGuiMixin):
         self.gui_sidebar_right_hide()
 
     @property
+    def gallery_animation_distance(self):
+        return self.gui_gallery_container.height
+
+    @property
     def gallery_exit_animation(self):
         if not self._gallery_exit_animation:
             def _when_done(_, instance):
@@ -378,10 +375,6 @@ class GalleryGuiMixin(GalleryMixin, BaseGuiMixin):
             self._gallery_exit_animation = Animation(y=self.gallery_animation_distance)
             self._gallery_exit_animation.bind(on_complete=_when_done)
         return self._gallery_exit_animation
-
-    @property
-    def gallery_animation_distance(self):
-        return self.gui_gallery_container.height
 
     @property
     def gallery_entry_animation(self):
@@ -426,9 +419,6 @@ class GalleryGuiMixin(GalleryMixin, BaseGuiMixin):
             )
             self.gui_animation_layer.add_widget(self._gallery_image)
             self.gallery_entry_animation.start(self._gallery_image)
-
-    def gallery_start(self):
-        self.gallery_manager(WEBRESOURCE).start()
 
     def gui_setup(self):
         super(GalleryGuiMixin, self).gui_setup()
