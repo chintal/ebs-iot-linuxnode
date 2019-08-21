@@ -212,6 +212,7 @@ class GalleryManager(object):
 
     def step(self):
         self._seq = self.next_seq
+        print(self._seq)
         duration = self._trigger_transition()
         if not duration:
             duration = self.default_duration
@@ -393,7 +394,7 @@ class GalleryGuiMixin(GalleryMixin, BaseGuiMixin):
 
     @gui_gallery_current.setter
     def gui_gallery_current(self, value):
-        if value is None and self._gallery_visible:
+        if value is None:
             self.gui_gallery_hide()
             return
         if self._gallery_image:
