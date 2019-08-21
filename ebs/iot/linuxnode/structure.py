@@ -23,6 +23,7 @@ class BaseGuiStructureMixin(object):
         self._gui_main_content = None
         self._gui_sidebar_right = None
         self._gui_sidebar_left = None
+        self._gui_animation_layer = None
         super(BaseGuiStructureMixin, self).__init__(*args, **kwargs)
 
     @property
@@ -133,6 +134,22 @@ class BaseGuiStructureMixin(object):
             self.gui_content_root.add_widget(self._gui_main_content)
         return self._gui_main_content
 
+    @property
+    def gui_sidebar_right(self):
+        if not self._gui_sidebar_right:
+            self._gui_sidebar_right = BoxLayout(orientation='vertical',
+                                                size_hint=((0.28/0.72), 1))
+        return self._gui_sidebar_right
+
+    def gui_sidebar_right_show(self):
+        if not self.gui_sidebar_right.parent:
+            self.gui_content_root.add_widget(self.gui_sidebar_right)
+            self.gui_content_root.do_layout()
+
+    def gui_sidebar_right_hide(self):
+        if self.gui_sidebar_right.parent:
+            self.gui_content_root.remove_widget(self.gui_sidebar_right)
+
     # @property
     # def gui_sidebar_left(self):
     #     if not self._gui_sidebar_left:
@@ -154,27 +171,20 @@ class BaseGuiStructureMixin(object):
     #         self.gui_content_root.remove_widget(self.gui_sidebar_left)
 
     @property
-    def gui_sidebar_right(self):
-        if not self._gui_sidebar_right:
-            self._gui_sidebar_right = FloatLayout(size_hint=((0.28/0.72), 1))
-        return self._gui_sidebar_right
-
-    def gui_sidebar_right_show(self):
-        if not self.gui_sidebar_right.parent:
-            self.gui_content_root.add_widget(self.gui_sidebar_right)
-            self.gui_content_root.do_layout()
-
-    def gui_sidebar_right_hide(self):
-        if self.gui_sidebar_right.parent:
-            self.gui_content_root.remove_widget(self.gui_sidebar_right)
-
-    @property
     def gui_content_root(self):
         if not self._gui_content_root:
             self._gui_content_root = GridLayout(rows=1, spacing=10)
             self.gui_root.add_widget(self._gui_content_root,
                                      len(self.gui_root.children) - 1)
         return self._gui_content_root
+
+    @property
+    def gui_animation_layer(self):
+        if not self._gui_animation_layer:
+            self._gui_animation_layer = FloatLayout()
+            self.gui_root.add_widget(self._gui_animation_layer,
+                                     len(self.gui_root.children) - 1)
+        return self._gui_animation_layer
 
     @property
     def gui_root(self):

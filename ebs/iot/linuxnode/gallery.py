@@ -12,9 +12,12 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm.exc import NoResultFound
 
+from kivy.animation import Animation
+
 from .basemixin import BaseMixin
 from .basemixin import BaseGuiMixin
 from .resources import ASSET
+from .widgets import StandardImage
 
 WEBRESOURCE = 1
 
@@ -215,10 +218,6 @@ class GalleryManager(object):
         return deferLater(self._node.reactor, duration, self.step)
 
     def _trigger_transition(self):
-        # If current_seq is -1, that means the gallery is empty. This may be
-        # called repeatedly with -1. Use the returned duration to slow down
-        # unnecessary requests. This function should also appropriately handle
-        # creating or destroying gallery components.
         raise NotImplementedError
 
     def render(self):
@@ -296,10 +295,23 @@ class ResourceGalleryManager(GalleryManager):
         return [x.resource for x in results]
 
     def _trigger_transition(self):
+        # If current_seq is -1, that means the gallery is empty. This may be
+        # called repeatedly with -1. Use the returned duration to slow down
+        # unnecessary requests. This function should also appropriately handle
+        # creating or destroying gallery components.
+        if self.current_seq == -1:
+            self._node.gui_gallery_current = None
+            return 30
         session = self.db()
         try:
             target = self.db_get_resources(session, seq=self.current_seq).one()
-            # print("Triggering transition to {0} ".format(target))
+            if target.rtype == WEBRESOURCE:
+                fp = self._node.resource_manager.get(target.resource).filepath
+                if not os.path.exists(fp):
+                    self._node.gui_gallery_current = None
+                    return 10
+                self._node.gui_gallery_current = fp
+            return target.duration
         except:
             session.rollback()
         finally:
@@ -322,6 +334,9 @@ class GalleryMixin(BaseMixin):
             self._gallery_managers[gmid] = ResourceGalleryManager(self, gmid)
         return self._gallery_managers[gmid]
 
+    def gallery_load(self, gmid, items):
+        self.gallery_manager(gmid).load(items)
+
     @property
     def _cache_trim_exclusions(self):
         return [self.gallery_manager(WEBRESOURCE).resources]
@@ -334,8 +349,86 @@ class GalleryMixin(BaseMixin):
 
 
 class GalleryGuiMixin(GalleryMixin, BaseGuiMixin):
+    _media_extentions_image = ['.png', '.jpg', '.bmp', '.gif', '.jpeg']
+
     def __init__(self, *args, **kwargs):
+        self._gallery_visible = False
+        self._gallery_image = None
+        self._gallery_exit_animation = None
+        self._gallery_entry_animation = None
         super(GalleryGuiMixin, self).__init__(*args, **kwargs)
+
+    @property
+    def gui_gallery_container(self):
+        return self.gui_sidebar_right
+
+    def gui_gallery_show(self):
+        self._gallery_visible = True
+        self.gui_sidebar_right_show()
+
+    def gui_gallery_hide(self):
+        self._gallery_visible = False
+        self.gui_sidebar_right_hide()
+
+    @property
+    def gallery_exit_animation(self):
+        if not self._gallery_exit_animation:
+            def _when_done(_, instance):
+                self.gui_animation_layer.remove_widget(instance)
+            self._gallery_exit_animation = Animation(y=self.gallery_animation_distance)
+            self._gallery_exit_animation.bind(on_complete=_when_done)
+        return self._gallery_exit_animation
+
+    @property
+    def gallery_animation_distance(self):
+        return self.gui_gallery_container.height
+
+    @property
+    def gallery_entry_animation(self):
+        if not self._gallery_entry_animation:
+            def _when_done(_, instance):
+                self.gui_animation_layer.remove_widget(instance)
+                instance.size_hint = (1, 1)
+                self.gui_gallery_container.add_widget(instance)
+            self._gallery_entry_animation = Animation(y=0)
+            self._gallery_entry_animation.bind(on_complete=_when_done)
+        return self._gallery_entry_animation
+
+    @property
+    def gui_gallery_current(self):
+        return self._gallery_image
+
+    @gui_gallery_current.setter
+    def gui_gallery_current(self, value):
+        if value is None and self._gallery_visible:
+            self.gui_gallery_hide()
+            return
+        if self._gallery_image:
+            pos = self._gallery_image.pos
+            self.gui_gallery_container.remove_widget(self._gallery_image)
+            self._gallery_image.size_hint = (None, None)
+            self._gallery_image.pos = pos
+            self.gui_animation_layer.add_widget(self._gallery_image)
+            self.gallery_exit_animation.start(self._gallery_image)
+
+        if os.path.splitext(value)[1] in self._media_extentions_image:
+            self._gallery_image = StandardImage(source=value, allow_stretch=True,
+                                                keep_ratio=True, anim_delay=0.08)
+            if not self._gallery_visible:
+                self.gui_gallery_container.add_widget(self._gallery_image)
+                self.gui_gallery_show()
+                return
+            self._gallery_image.size_hint = (None, None)
+            self._gallery_image.size = self.gui_gallery_container.size
+            self._gallery_image.pos = (
+                self.gui_gallery_container.pos[0],
+                self.gui_gallery_container.pos[1] - self.gallery_animation_distance
+            )
+            self.gui_animation_layer.add_widget(self._gallery_image)
+            self.gallery_entry_animation.start(self._gallery_image)
+
+    def gallery_start(self):
+        self.gallery_manager(WEBRESOURCE).start()
 
     def gui_setup(self):
         super(GalleryGuiMixin, self).gui_setup()
