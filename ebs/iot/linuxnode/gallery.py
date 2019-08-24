@@ -212,7 +212,6 @@ class GalleryManager(object):
 
     def step(self):
         self._seq = self.next_seq
-        print(self._seq)
         duration = self._trigger_transition()
         if not duration:
             duration = self.default_duration
