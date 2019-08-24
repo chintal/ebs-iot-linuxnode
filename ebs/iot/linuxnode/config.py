@@ -7,10 +7,13 @@ from appdirs import user_config_dir
 
 class IoTNodeConfig(object):
     _config_file = os.path.join(user_config_dir('iotnode'), 'config.ini')
+    _sys_config_file = os.path.join('/etc/raspap/custom.ini')
 
     def __init__(self):
         self._config = ConfigParser()
         self._config.read(self._config_file)
+        self._sys_config = ConfigParser()
+        self._sys_config.read(self._sys_config_file)
         self._config_apply_init()
 
     def _config_apply_init(self):
@@ -103,6 +106,43 @@ class IoTNodeConfig(object):
     @property
     def http_max_concurrent_downloads(self):
         return self._config.getint('http', 'max_concurrent_downloads', fallback=1)
+
+    @property
+    def http_proxy_host(self):
+        return self._sys_config.get('NetworkProxyConfiguration', 'host', fallback=None)
+
+    @property
+    def http_proxy_port(self):
+        return self._sys_config.getint('NetworkProxyConfiguration', 'port', fallback=0)
+
+    @property
+    def http_proxy_user(self):
+        return self._sys_config.get('NetworkProxyConfiguration', 'user', fallback=None)
+
+    @property
+    def http_proxy_pass(self):
+        return self._sys_config.get('NetworkProxyConfiguration', 'pass', fallback=None)
+
+    @property
+    def http_proxy_enabled(self):
+        return self.http_proxy_host is not None
+
+    @property
+    def http_proxy_auth(self):
+        if not self.http_proxy_user:
+            return None
+        if not self.http_proxy_pass:
+            return self.http_proxy_user
+        return "{0}:{1}".format(self.http_proxy_user, self.http_proxy_pass)
+
+    @property
+    def http_proxy_url(self):
+        url = self.http_proxy_host
+        if self.http_proxy_port:
+            url = "{0}:{1}".format(url, self.http_proxy_port)
+        if self.http_proxy_auth:
+            url = "{0}@{1}".format(self.http_proxy_auth, url)
+        return url
 
     # Resource Manager
     @property
