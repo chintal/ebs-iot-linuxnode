@@ -1,10 +1,13 @@
 
 
 import os
+import base64
 
 from functools import partial
 from six.moves.urllib.parse import urlparse
 from twisted.web.client import Agent
+from twisted.web.client import ProxyAgent
+from twisted.internet.endpoints import TCP4ClientEndpoint
 from twisted.internet.defer import DeferredSemaphore
 from treq.client import HTTPClient
 
@@ -42,6 +45,22 @@ def swallow_http_error(failure):
 class NoResumeResponseError(Exception):
     def __init__(self, code):
         self.code = code
+
+
+class DefaultHeadersHttpClient(HTTPClient):
+    def __init__(self, *args, **kwargs):
+        self._default_headers = kwargs.pop('headers', default={})
+        super(DefaultHeadersHttpClient, self).__init__(*args, **kwargs)
+
+    def get(self, url, **kwargs):
+        headers = kwargs.pop('headers', default={})
+        headers.update(self._default_headers)
+        return super(DefaultHeadersHttpClient, self).get(url, **kwargs)
+
+    def post(self, url, **kwargs):
+        headers = kwargs.pop('headers', default={})
+        headers.update(self._default_headers)
+        return super(DefaultHeadersHttpClient, self).get(url, **kwargs)
 
 
 class WatchfulBodyCollector(Protocol):
@@ -90,6 +109,7 @@ def watchful_collect(response, collector, chunktimeout=None, reactor=None):
 class HttpClientMixin(NetworkInfoMixin, NodeBusyMixin,
                       NodeLoggingMixin, BaseMixin):
     def __init__(self, *args, **kwargs):
+        self._http_headers = {}
         self._http_client = None
         self._http_semaphore = None
         self._http_semaphore_background = None
@@ -268,8 +288,20 @@ class HttpClientMixin(NetworkInfoMixin, NodeBusyMixin,
             # Silence the twisted.web.client._HTTP11ClientFactory
             from twisted.web.client import _HTTP11ClientFactory
             _HTTP11ClientFactory.noisy = False
-            agent = Agent(reactor=self.reactor)
-            self._http_client = HTTPClient(agent=agent)
+            if self.config.http_proxy_enabled:
+                proxy_endpoint = TCP4ClientEndpoint(self.reactor,
+                                                    self.config.http_proxy_host,
+                                                    self.config.http_proxy_port)
+                agent = ProxyAgent(proxy_endpoint)
+                if self.config.http_proxy_user:
+                    auth = base64.b64encode(self.config.http_proxy_auth)
+                    self._http_headers = {
+                        'Proxy-Authorization': ["Basic {0}".format(auth.strip())]
+                    }
+            else:
+                agent = Agent(reactor=self.reactor)
+            self._http_client = DefaultHeadersHttpClient(agent=agent,
+                                                         headers=self._http_headers)
         return self._http_client
 
     def stop(self):
