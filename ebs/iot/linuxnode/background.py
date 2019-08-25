@@ -55,7 +55,7 @@ class BackgroundGuiMixin(ConfigMixin, BaseGuiMixin):
             self._bg_video.unload()
             self._bg_video = None
         self._bg_image = BleedImage(
-            source=value,
+            source=value, allow_stretch=True, keep_ratio=True,
             bgcolor=self._gui_background_color or 'auto'
         )
         self._bg = self._bg_image
