@@ -4,10 +4,11 @@ _requires = [
     'six',
     'setuptools-scm',
     'appdirs',
-    'Cython',
+    'Cython==0.29.10',
     'twisted[tls]',
     'SQLAlchemy',
-    'kivy>1.10.1',
+    'kivy>=1.11.1',
+    'kivy-garden',
 
     # Node Id
     'netifaces',
@@ -39,9 +40,6 @@ setuptools.setup(
                                         'images/no-server.png']},
 
     install_requires=_requires,
-    dependency_links=[
-        'git+https://github.com/kivy/kivy.git@master#egg=kivy-1.11.0'
-    ],
 
     setup_requires=['setuptools_scm'],
     use_scm_version=True,
