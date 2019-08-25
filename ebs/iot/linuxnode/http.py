@@ -49,16 +49,16 @@ class NoResumeResponseError(Exception):
 
 class DefaultHeadersHttpClient(HTTPClient):
     def __init__(self, *args, **kwargs):
-        self._default_headers = kwargs.pop('headers', default={})
+        self._default_headers = kwargs.pop('headers', {})
         super(DefaultHeadersHttpClient, self).__init__(*args, **kwargs)
 
     def get(self, url, **kwargs):
-        headers = kwargs.pop('headers', default={})
+        headers = kwargs.pop('headers',{})
         headers.update(self._default_headers)
         return super(DefaultHeadersHttpClient, self).get(url, **kwargs)
 
     def post(self, url, **kwargs):
-        headers = kwargs.pop('headers', default={})
+        headers = kwargs.pop('headers', {})
         headers.update(self._default_headers)
         return super(DefaultHeadersHttpClient, self).get(url, **kwargs)
 
