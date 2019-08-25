@@ -121,7 +121,7 @@ class GalleryResource(object):
 
 
 class GalleryManager(object):
-    def __init__(self, node, gmid, default_duration=10):
+    def __init__(self, node, gmid, default_duration=8):
         # TODO Extract db layer from here and EM into reusable format?
         self._gmid = gmid
         self._node = node
@@ -372,7 +372,9 @@ class GalleryGuiMixin(GalleryMixin, BaseGuiMixin):
         if not self._gallery_exit_animation:
             def _when_done(_, instance):
                 self.gui_animation_layer.remove_widget(instance)
-            self._gallery_exit_animation = Animation(y=self.gallery_animation_distance)
+            self._gallery_exit_animation = Animation(
+                    y=self.gallery_animation_distance, t='in_out_elastic', 
+                    duration=2)
             self._gallery_exit_animation.bind(on_complete=_when_done)
         return self._gallery_exit_animation
 
@@ -383,7 +385,8 @@ class GalleryGuiMixin(GalleryMixin, BaseGuiMixin):
                 self.gui_animation_layer.remove_widget(instance)
                 instance.size_hint = (1, 1)
                 self.gui_gallery_container.add_widget(instance)
-            self._gallery_entry_animation = Animation(y=0)
+            self._gallery_entry_animation = Animation(
+                    y=0, duration=2, t='in_out_elastic')
             self._gallery_entry_animation.bind(on_complete=_when_done)
         return self._gallery_entry_animation
 
