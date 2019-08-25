@@ -63,7 +63,7 @@ class IoTNodeConfig(object):
     def app_dispmanx_layer(self):
         if self.platform != 'rpi':
             raise AttributeError("dispmanx layer is an RPI thing")
-        return self._config.getint('display-rpi', 'dispmanx_app_layer', fallback=1)
+        return self._config.getint('display-rpi', 'dispmanx_app_layer', fallback=3)
 
     def _apply_display_layer(self):
         if self.platform == 'rpi':
@@ -167,7 +167,13 @@ class IoTNodeConfig(object):
     @property
     def video_dispmanx_layer(self):
         if self.platform == 'rpi':
-            return self._config.getint('video-rpi', 'dispmanx_video_layer', fallback=0)
+            return self._config.getint('video-rpi', 'dispmanx_video_layer', fallback=1)
+
+    # Browser
+    @property
+    def browser_dispmanx_layer(self):
+        if self.platform == 'rpi':
+            return self._config.get('browser-rpi', 'dispmanx_browser_layer', fallback=2)
 
     # Fonts
     @property
