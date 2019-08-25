@@ -21,7 +21,10 @@ _requires = [
 
     # Event Manager
     'cached_property',
-    'pqueue'
+    'pqueue',
+
+    # Browser
+    'selenium',
 ]
 
 setuptools.setup(

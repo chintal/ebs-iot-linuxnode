@@ -163,13 +163,13 @@ class OverlayWindowGuiMixin(BackgroundGuiMixin):
             return
         self._overlay_mode = True
         Window.clearcolor = [0, 0, 0, 0]
-        self.gui_bg_pause()
+        # self.gui_bg_pause()
 
     def _gui_overlay_mode_exit(self):
         if not self._overlay_mode:
             return
         self._overlay_mode = False
-        self.gui_bg_resume()
+        # self.gui_bg_resume()
         Window.clearcolor = [0, 0, 0, 1]
 
     def gui_setup(self):
