@@ -3,6 +3,7 @@
 import os
 from six.moves.urllib.parse import urlparse
 from twisted.internet.task import deferLater
+from twisted.internet.defer import CancelledError
 
 from sqlalchemy import Column
 from sqlalchemy import Integer
@@ -17,7 +18,7 @@ from kivy.animation import Animation
 from .basemixin import BaseMixin
 from .basemixin import BaseGuiMixin
 from .resources import ASSET
-from .widgets import StandardImage
+from .widgets import BleedImage
 
 WEBRESOURCE = 1
 
@@ -126,6 +127,7 @@ class GalleryManager(object):
         self._gmid = gmid
         self._node = node
         self._seq = 0
+        self._task = None
 
         self._db_engine = None
         self._db = None
@@ -210,15 +212,30 @@ class GalleryManager(object):
         finally:
             session.close()
 
+    def start(self):
+        self._node.log.info("Starting Gallery Manager {gmid} of {name}",
+                            gmid=self._gmid, name=self.__class__.__name__)
+        self.step()
+
     def step(self):
         self._seq = self.next_seq
-        duration = self._trigger_transition()
+        duration = self._trigger_transition(stopped=False)
         if not duration:
             duration = self.default_duration
-        return deferLater(self._node.reactor, duration, self.step)
+        self._task = deferLater(self._node.reactor, duration, self.step)
 
-    def _trigger_transition(self):
+        def _cancel_handler(failure):
+            failure.trap(CancelledError)
+        self._task.addErrback(_cancel_handler)
+        return self._task
+
+    def _trigger_transition(self, stopped=False):
         raise NotImplementedError
+
+    def stop(self):
+        if self._task:
+            self._task.cancel()
+        self._trigger_transition(stopped=True)
 
     def render(self):
         session = self.db()
@@ -294,12 +311,12 @@ class ResourceGalleryManager(GalleryManager):
             session.close()
         return [x.resource for x in results]
 
-    def _trigger_transition(self):
+    def _trigger_transition(self, stopped=False):
         # If current_seq is -1, that means the gallery is empty. This may be
         # called repeatedly with -1. Use the returned duration to slow down
         # unnecessary requests. This function should also appropriately handle
         # creating or destroying gallery components.
-        if self.current_seq == -1:
+        if stopped or self.current_seq == -1:
             self._node.gui_gallery_current = None
             return 30
         session = self.db()
@@ -316,11 +333,6 @@ class ResourceGalleryManager(GalleryManager):
             session.rollback()
         finally:
             session.close()
-
-    def start(self):
-        self._node.log.info("Starting Gallery Manager {gmid} of {name}",
-                            gmid=self._gmid, name=self.__class__.__name__)
-        self.step()
 
 
 class GalleryMixin(BaseMixin):
@@ -339,6 +351,9 @@ class GalleryMixin(BaseMixin):
 
     def gallery_start(self):
         self.gallery_manager(WEBRESOURCE).start()
+
+    def gallery_stop(self):
+        self.gallery_manager(WEBRESOURCE).stop()
 
 
 class GalleryGuiMixin(GalleryMixin, BaseGuiMixin):
@@ -408,8 +423,9 @@ class GalleryGuiMixin(GalleryMixin, BaseGuiMixin):
             self.gallery_exit_animation.start(self._gallery_image)
 
         if os.path.splitext(value)[1] in self._media_extentions_image:
-            self._gallery_image = StandardImage(source=value, allow_stretch=True,
-                                                keep_ratio=True, anim_delay=0.08)
+            self._gallery_image = BleedImage(source=value, allow_stretch=True,
+                                             keep_ratio=True, anim_delay=0.08,
+                                             bgcolor=[0, 0, 0, 1])
             if not self._gallery_visible:
                 self.gui_gallery_container.add_widget(self._gallery_image)
                 self.gui_gallery_show()
