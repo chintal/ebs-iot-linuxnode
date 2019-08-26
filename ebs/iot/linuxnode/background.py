@@ -159,6 +159,7 @@ class OverlayWindowGuiMixin(BackgroundGuiMixin):
             self._gui_overlay_mode_exit()
 
     def _gui_overlay_mode_enter(self):
+        self.log.info('Entering Overlay Mode')
         if self._overlay_mode:
             return
         self._overlay_mode = True
@@ -166,6 +167,7 @@ class OverlayWindowGuiMixin(BackgroundGuiMixin):
         # self.gui_bg_pause()
 
     def _gui_overlay_mode_exit(self):
+        self.log.info('Exiting Overlay Mode')
         if not self._overlay_mode:
             return
         self._overlay_mode = False
