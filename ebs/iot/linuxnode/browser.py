@@ -80,8 +80,11 @@ class BrowserMixin(ConfigMixin, BaseMixin):
         self.gui_browser_show()
 
     def browser_stop(self):
-        self.gui_browser_hide()
-        self.browser_manager(0).clear()
+        if self.config.browser_show_default:
+            self.browser.target = self.config.browser_default_url
+        else:
+            self.gui_browser_hide()
+            self.browser_manager(0).clear()
 
     def gui_browser_show(self):
         pass
