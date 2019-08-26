@@ -137,8 +137,9 @@ class BaseGuiStructureMixin(object):
     @property
     def gui_sidebar_right(self):
         if not self._gui_sidebar_right:
+            x_hint = self.config.sidebar_width / (1 - self.config.sidebar_width)
             self._gui_sidebar_right = BoxLayout(orientation='vertical',
-                                                size_hint=((0.28/0.72), 1))
+                                                size_hint=(x_hint, 1))
         return self._gui_sidebar_right
 
     def gui_sidebar_right_show(self):

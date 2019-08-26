@@ -51,6 +51,10 @@ class IoTNodeConfig(object):
         return self._config.getboolean('display', 'overlay_mode', fallback=False)
 
     @property
+    def sidebar_width(self):
+        return self._config.getfloat('display', 'sidebar_width', fallback=0.3)
+
+    @property
     def background(self):
         return self._config.get('display', 'background', fallback='images/background.png')
 
