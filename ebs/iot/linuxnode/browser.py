@@ -1,5 +1,7 @@
 
 
+from twisted.internet import threads
+from twisted.internet.defer import Deferred
 from selenium.webdriver import Chrome
 from selenium.webdriver.chrome.options import Options
 
@@ -31,7 +33,12 @@ class BrowserManager(object):
     @property
     def browser(self):
         if not self._browser:
-            self._browser = Chrome(options=self.options)
+            d = threads.deferToThread(Chrome, options=self.options)
+
+            def _attach_browser(browser):
+                self._browser = browser
+            d.addCallback(_attach_browser)
+            self._browser = d
         return self._browser
 
     @property
@@ -40,7 +47,7 @@ class BrowserManager(object):
 
     @target.setter
     def target(self, value):
-        self.browser.get(value)
+        self._node.reactor.callInThread(self.browser.get, value)
         self._target = value
 
     def clear(self):
@@ -53,7 +60,7 @@ class BrowserManager(object):
         self.browser.set_window_rect(x, y, width, height)
 
     def start(self):
-        _ = self.browser
+        return self.browser
 
     def terminate(self):
         if not self._browser:
@@ -77,8 +84,11 @@ class BrowserMixin(ConfigMixin, BaseMixin):
         return self.browser_manager(0)
 
     def browser_start(self):
-        self.browser_manager(0).start()
-        self.gui_browser_show()
+        maybe_deferred = self.browser_manager(0).start()
+        if isinstance(maybe_deferred, Deferred):
+            maybe_deferred.addCallback(lambda _: self.gui_browser_show())
+        else:
+            self.gui_browser_show()
 
     def browser_stop(self):
         if self.config.browser_show_default:
