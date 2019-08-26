@@ -4,14 +4,14 @@ from selenium.webdriver import Chrome
 from selenium.webdriver.chrome.options import Options
 
 from .basemixin import BaseMixin
+from .config import ConfigMixin
 from .background import OverlayWindowGuiMixin
 
 
 class BrowserManager(object):
-    def __init__(self, node, bmid, default_page="http://starxmedia.in"):
+    def __init__(self, node, bmid):
         self._bmid = bmid
         self._node = node
-        self._default_page = default_page
         self._target = None
         self._browser = None
 
@@ -19,7 +19,7 @@ class BrowserManager(object):
     def options(self):
         chrome_options = Options()
         chrome_options.add_argument("--disable-extensions")
-        chrome_options.add_argument("--app={0}".format(self._default_page))
+        chrome_options.add_argument("--app={0}".format(self.config.browser_default_url))
         # if self._node.config.http_proxy_enabled:
         #     chrome_options.add_argument(
         #         "--proxy={0}".format(self._node.config.http_proxy_url)
@@ -59,7 +59,7 @@ class BrowserManager(object):
         self._browser.close()
 
 
-class BrowserMixin(BaseMixin):
+class BrowserMixin(ConfigMixin, BaseMixin):
     def __init__(self, *args, **kwargs):
         self._browser_managers = {}
         super(BrowserMixin, self).__init__(*args, **kwargs)
@@ -87,6 +87,11 @@ class BrowserMixin(BaseMixin):
 
     def gui_browser_hide(self):
         pass
+
+    def start(self):
+        super(BrowserMixin, self).start()
+        if self.config.browser_show_default:
+            self.browser_start()
 
     def stop(self):
         for bmid in self._browser_managers.keys():

@@ -171,6 +171,27 @@ class IoTNodeConfig(object):
 
     # Browser
     @property
+    def browser_show_default(self):
+        return self._config.getboolean('browser', 'show_default', fallback=False)
+
+    @browser_show_default.setter
+    def browser_show_default(self, value):
+        if value:
+            value = True
+        else:
+            value = False
+        self._config.set('browser', 'show_default', value)
+
+    @property
+    def browser_default_url(self):
+        return self._config.get('browser', 'default_url', fallback='http://www.google.com')
+
+    @browser_default_url.setter
+    def browser_default_url(self, value):
+        self._config.set('browser', 'default', value)
+        self._write_config()
+
+    @property
     def browser_dispmanx_layer(self):
         if self.platform == 'rpi':
             return self._config.get('browser-rpi', 'dispmanx_browser_layer', fallback=2)
