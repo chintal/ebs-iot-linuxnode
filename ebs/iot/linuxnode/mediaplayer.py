@@ -117,6 +117,7 @@ class MediaPlayerGuiMixin(OverlayWindowGuiMixin):
         self._media_playing = Video(source=filepath, state='play',
                                     eos=eos, allow_stretch=True)
         self._media_playing.opacity = 0
+        self.gui_mediaview.make_opaque()
 
         def _while_playing(*_):
             self._media_playing.opacity = 1
@@ -124,6 +125,7 @@ class MediaPlayerGuiMixin(OverlayWindowGuiMixin):
 
         def _when_done(*_):
             self.media_stop()
+            self.gui_mediaview.make_transparent()
         self._media_playing.bind(eos=_when_done)
 
         self.gui_mediaview.add_widget(self._media_playing)
@@ -143,7 +145,7 @@ class MediaPlayerGuiMixin(OverlayWindowGuiMixin):
     @property
     def gui_mediaview(self):
         if self._gui_mediaview is None:
-            self._gui_mediaview = ColorBoxLayout(bgcolor=(0, 0, 0, 1))
+            self._gui_mediaview = ColorBoxLayout(bgcolor=(0, 0, 0, 0))
             self.gui_main_content.add_widget(self._gui_mediaview)
         return self._gui_mediaview
 
