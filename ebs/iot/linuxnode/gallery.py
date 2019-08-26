@@ -18,7 +18,8 @@ from kivy.animation import Animation
 from .basemixin import BaseMixin
 from .basemixin import BaseGuiMixin
 from .resources import ASSET
-from .widgets import BleedImage
+from .widgets import StandardImage
+from .widgets import ColorBoxLayout
 
 WEBRESOURCE = 1
 
@@ -360,6 +361,7 @@ class GalleryGuiMixin(GalleryMixin, BaseGuiMixin):
     _media_extentions_image = ['.png', '.jpg', '.bmp', '.gif', '.jpeg']
 
     def __init__(self, *args, **kwargs):
+        self._gallery_container = None
         self._gallery_visible = False
         self._gallery_image = None
         self._gallery_exit_animation = None
@@ -367,15 +369,23 @@ class GalleryGuiMixin(GalleryMixin, BaseGuiMixin):
         super(GalleryGuiMixin, self).__init__(*args, **kwargs)
 
     @property
-    def gui_gallery_container(self):
+    def gui_gallery_parent(self):
         return self.gui_sidebar_right
+
+    @property
+    def gui_gallery_container(self):
+        if not self._gallery_container:
+            self._gallery_container = ColorBoxLayout(bgcolor=[0, 0, 0, 1])
+        return self._gallery_container
 
     def gui_gallery_show(self):
         self._gallery_visible = True
+        self.gui_gallery_parent.add_widget(self.gui_gallery_container)
         self.gui_sidebar_right_show()
 
     def gui_gallery_hide(self):
         self._gallery_visible = False
+        self.gui_gallery_parent.remove_widget(self.gui_gallery_container)
         self.gui_sidebar_right_hide()
 
     @property
@@ -423,9 +433,8 @@ class GalleryGuiMixin(GalleryMixin, BaseGuiMixin):
             self.gallery_exit_animation.start(self._gallery_image)
 
         if os.path.splitext(value)[1] in self._media_extentions_image:
-            self._gallery_image = BleedImage(source=value, allow_stretch=True,
-                                             keep_ratio=True, anim_delay=0.08,
-                                             bgcolor=[0, 0, 0, 1])
+            self._gallery_image = StandardImage(source=value, allow_stretch=True,
+                                                keep_ratio=True, anim_delay=0.08)
             if not self._gallery_visible:
                 self.gui_gallery_container.add_widget(self._gallery_image)
                 self.gui_gallery_show()
