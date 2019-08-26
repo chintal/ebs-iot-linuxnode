@@ -17,9 +17,10 @@ class BrowserManager(object):
 
     @property
     def options(self):
+        start_page = self._node.config.browser_default_url
         chrome_options = Options()
         chrome_options.add_argument("--disable-extensions")
-        chrome_options.add_argument("--app={0}".format(self.config.browser_default_url))
+        chrome_options.add_argument("--app={0}".format(start_page))
         # if self._node.config.http_proxy_enabled:
         #     chrome_options.add_argument(
         #         "--proxy={0}".format(self._node.config.http_proxy_url)
