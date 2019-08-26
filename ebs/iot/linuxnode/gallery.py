@@ -334,8 +334,8 @@ class GalleryMixin(BaseMixin):
             self._gallery_managers[gmid] = ResourceGalleryManager(self, gmid)
         return self._gallery_managers[gmid]
 
-    def gallery_load(self, gmid, items):
-        self.gallery_manager(gmid).load(items)
+    def gallery_load(self, items):
+        self.gallery_manager(WEBRESOURCE).load(items)
 
     def gallery_start(self):
         self.gallery_manager(WEBRESOURCE).start()
