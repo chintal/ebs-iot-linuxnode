@@ -27,7 +27,7 @@ _requires = [
     'selenium',
 
     # RPi Mediaplayer
-    'omxplayer-wrapper',
+    #'omxplayer-wrapper',
 ]
 
 setuptools.setup(
