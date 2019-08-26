@@ -164,9 +164,9 @@ class IoTNodeConfig(object):
 
     # Video
     @property
-    def video_player(self):
+    def video_external_player(self):
         if self.platform == 'rpi':
-            return self._config.get('video-rpi', 'video_player', fallback=None)
+            return self._config.getboolean('video-rpi', 'external_player', fallback=False)
 
     @property
     def video_dispmanx_layer(self):

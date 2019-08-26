@@ -1,9 +1,8 @@
 
 
 import os
-from twisted.internet.defer import Deferred
-from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.video import Video
+from twisted.internet.defer import Deferred
 
 from .widgets import StandardImage
 from .widgets import ColorBoxLayout
@@ -95,6 +94,7 @@ class MediaPlayerMixin(NodeLoggingMixin):
 class MediaPlayerGuiMixin(OverlayWindowGuiMixin):
     def __init__(self, *args, **kwargs):
         super(MediaPlayerGuiMixin, self).__init__(*args, **kwargs)
+        self._media_player_external = None
         self._media_playing = None
         self._gui_mediaview = None
 
@@ -105,10 +105,10 @@ class MediaPlayerGuiMixin(OverlayWindowGuiMixin):
         self.gui_mediaview.add_widget(self._media_playing)
 
     def _media_play_video(self, *args, **kwargs):
-        if self.config.video_player is None:
-            self._media_play_video_native(*args, **kwargs)
-        elif self.config.video_player == 'omxplayer':
+        if self.config.video_external_player:
             self._media_play_video_omxplayer(*args, **kwargs)
+        else:
+            self._media_play_video_native(*args, **kwargs)
 
     def _media_play_video_native(self, filepath, loop=False):
         if loop:
@@ -132,6 +132,11 @@ class MediaPlayerGuiMixin(OverlayWindowGuiMixin):
 
     def _media_play_video_omxplayer(self, filepath, loop=False):
         dispmanx_layer = self.config.video_dispmanx_layer
+
+    def media_player_external(self):
+        if self._media_player_external:
+            self._media_player_external = OMXPlayer()
+        return self._media_player_external
 
     def media_stop(self, forced=False):
         print("Stopping Media : {0}".format(self._media_playing))
