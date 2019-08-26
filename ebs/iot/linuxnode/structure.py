@@ -142,11 +142,13 @@ class BaseGuiStructureMixin(object):
         return self._gui_sidebar_right
 
     def gui_sidebar_right_show(self):
+        self.log.debug("Showing right sidebar")
         if not self.gui_sidebar_right.parent:
             self.gui_content_root.add_widget(self.gui_sidebar_right)
             self.gui_content_root.do_layout()
 
     def gui_sidebar_right_hide(self):
+        self.log.debug("Hiding right sidebar")
         if self.gui_sidebar_right.parent:
             self.gui_content_root.remove_widget(self.gui_sidebar_right)
 
