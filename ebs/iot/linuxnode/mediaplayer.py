@@ -2,6 +2,7 @@
 
 import os
 from kivy.uix.video import Video
+from omxplayer.player import OMXPlayer
 from twisted.internet.defer import Deferred
 
 from .widgets import StandardImage
@@ -18,6 +19,25 @@ class MediaPlayerBusy(Exception):
     def __repr__(self):
         return "<MediaPlayerBusy Now Playing {0}" \
                "".format(self.now_playing)
+
+
+class ExternalMediaPlayer(object):
+    def __init__(self, filename, geometry, layer, when_done, reactor, loop=False):
+        x, y, width, height = geometry
+        args = [
+            '--no-osd', '--no-keys', '--aspect-mode', 'letterbox',
+            '--win', '{0},{1},{2},{3}'.format(x, y, x + width, y + height),
+            '--layer', layer,
+        ]
+        self._player = OMXPlayer(filename, args=args)
+
+        def _exit_handler(player, exit_state):
+            reactor.callFromThread(when_done)
+
+        self._player.exitEvent = _exit_handler
+
+    def force_stop(self):
+        self._player.stop()
 
 
 class MediaPlayerMixin(NodeLoggingMixin):
@@ -131,18 +151,21 @@ class MediaPlayerGuiMixin(OverlayWindowGuiMixin):
         self.gui_mediaview.add_widget(self._media_playing)
 
     def _media_play_video_omxplayer(self, filepath, loop=False):
-        dispmanx_layer = self.config.video_dispmanx_layer
-
-    def media_player_external(self):
-        if self._media_player_external:
-            self._media_player_external = OMXPlayer()
-        return self._media_player_external
+        self._media_playing = ExternalMediaPlayer(
+            filepath,
+            (self.gui_mediaview.x, self.gui_mediaview.y,
+             self.gui_mediaview.width, self.gui_mediaview.height),
+            self.config.video_dispmanx_layer, self.media_stop, loop
+        )
 
     def media_stop(self, forced=False):
         print("Stopping Media : {0}".format(self._media_playing))
         if isinstance(self._media_playing, Video):
             self._media_playing.unload()
-        if isinstance(self._media_playing, StandardImage):
+        elif isinstance(self._media_playing, ExternalMediaPlayer):
+            if forced:
+                self._media_playing.force_stop()
+        elif isinstance(self._media_playing, StandardImage):
             pass
         self.gui_mediaview.clear_widgets()
         MediaPlayerMixin.media_stop(self, forced=forced)
