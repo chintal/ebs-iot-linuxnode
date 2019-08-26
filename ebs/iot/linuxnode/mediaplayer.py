@@ -78,6 +78,7 @@ class MediaPlayerMixin(NodeLoggingMixin):
         def _resume_bg():
             if not self._mediaplayer_now_playing:
                 self.gui_bg_resume()
+                self.gui_mediaview.make_transparent()
         self.reactor.callLater(1.5, _resume_bg)
 
         if self._end_call and self._end_call.active():
@@ -125,7 +126,6 @@ class MediaPlayerGuiMixin(OverlayWindowGuiMixin):
 
         def _when_done(*_):
             self.media_stop()
-            self.gui_mediaview.make_transparent()
         self._media_playing.bind(eos=_when_done)
 
         self.gui_mediaview.add_widget(self._media_playing)
