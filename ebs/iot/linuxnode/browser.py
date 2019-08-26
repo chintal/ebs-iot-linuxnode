@@ -92,7 +92,7 @@ class BrowserMixin(ConfigMixin, BaseMixin):
     def start(self):
         super(BrowserMixin, self).start()
         if self.config.browser_show_default:
-            self.browser_start()
+            self._reactor.callLater(2, self.browser_start)
 
     def stop(self):
         for bmid in self._browser_managers.keys():
