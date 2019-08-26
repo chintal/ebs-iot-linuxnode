@@ -18,6 +18,7 @@ class BrowserManager(object):
     @property
     def options(self):
         start_page = self._node.config.browser_default_url
+        self._node.log.debug("Starting browser with {url}", url=start_page)
         chrome_options = Options()
         chrome_options.add_argument("--disable-extensions")
         chrome_options.add_argument("--app={0}".format(start_page))
