@@ -77,7 +77,7 @@ class MarqueeGuiMixin(ConfigMixin, BaseGuiMixin):
     def gui_marquee(self):
         if not self._gui_marquee:
             params = {'bgcolor': (self._gui_marquee_bgcolor or
-                                  color_set_alpha(self.gui_color_2, 0.4)),
+                                  color_set_alpha(self.gui_color_2, 0.6)),
                       'color': [1, 1, 1, 1],
                       'font_size': '36sp'}
             if self.config.text_font_name:
