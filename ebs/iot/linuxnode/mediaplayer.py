@@ -6,6 +6,7 @@ from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.video import Video
 
 from .widgets import StandardImage
+from .widgets import ColorBoxLayout
 from .log import NodeLoggingMixin
 from .background import OverlayWindowGuiMixin
 
@@ -142,7 +143,7 @@ class MediaPlayerGuiMixin(OverlayWindowGuiMixin):
     @property
     def gui_mediaview(self):
         if self._gui_mediaview is None:
-            self._gui_mediaview = BoxLayout()
+            self._gui_mediaview = ColorBoxLayout(bgcolor=(0, 0, 0, 1))
             self.gui_main_content.add_widget(self._gui_mediaview)
         return self._gui_mediaview
 

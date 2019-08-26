@@ -39,6 +39,12 @@ class BackgroundColorMixin(object):
             Color(*self.bgcolor)
             Rectangle(pos=self.pos, size=self.size)
 
+    def make_transparent(self):
+        self.bgcolor = color_set_alpha(self.bgcolor, 0)
+
+    def make_opaque(self):
+        self.bgcolor = color_set_alpha(self.bgcolor, 1)
+
 
 class ColorLabel(BackgroundColorMixin, Label):
     def __init__(self, **kwargs):
