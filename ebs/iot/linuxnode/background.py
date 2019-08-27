@@ -183,11 +183,11 @@ class OverlayWindowGuiMixin(BackgroundGuiMixin):
 
     def gui_setup(self):
         super(OverlayWindowGuiMixin, self).gui_setup()
+
         if self.config.show_foundation and \
                 self.config.foundation_image and \
                 os.path.exists(self.config.foundation_image): 
-            
-            print("Starting Foundation")    
+
             cmd = ['pngview', '-l', str(self.config.dispmanx_foundation_layer),
                    '-n', self.config.foundation_image]
             self._foundation_process = subprocess.Popen(cmd)
