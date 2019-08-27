@@ -422,6 +422,10 @@ class GalleryGuiMixin(GalleryMixin, BaseGuiMixin):
     @gui_gallery_current.setter
     def gui_gallery_current(self, value):
         if value is None:
+            if not self.gui_gallery_container:
+                return
+            if not self._gallery_image:
+                return
             self.gui_gallery_container.remove_widget(self._gallery_image)
             self._gallery_image = None
             self.gui_gallery_hide()
