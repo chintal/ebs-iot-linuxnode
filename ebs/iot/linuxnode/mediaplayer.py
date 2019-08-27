@@ -43,7 +43,7 @@ class BackdropManager(object):
     def set_geometry(self, x, y, width, height):
         if not self._process:
             self.start(x, y, width, height)
-        geometry = "{0},{1},{2},{3}\n".format(int(x), int(y), 
+        geometry = "{0},{1},{2},{3}\n".format(int(x), int(y),
                                               int(width), int(height))
         self._process.stdin.write(geometry.encode())
         self._process.stdin.flush()
@@ -217,6 +217,11 @@ class MediaPlayerGuiMixin(OverlayWindowGuiMixin):
             pass
         self.gui_mediaview.clear_widgets()
         MediaPlayerMixin.media_stop(self, forced=forced)
+
+    def stop(self):
+        if self._media_player_backdrop:
+            self._media_player_backdrop.close()
+        super(MediaPlayerGuiMixin, self).stop()
 
     @property
     def gui_mediaview(self):
