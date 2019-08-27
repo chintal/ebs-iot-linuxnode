@@ -112,6 +112,7 @@ class BrowserMixin(ConfigMixin, BaseMixin):
     def stop(self):
         for bmid in self._browser_managers.keys():
             self._browser_managers[bmid].terminate()
+        super(BrowserMixin, self).stop()
 
 
 class BrowserGuiMixin(OverlayWindowGuiMixin):

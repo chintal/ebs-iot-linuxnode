@@ -28,7 +28,7 @@ class ExternalMediaPlayer(object):
         x, y, width, height = geometry
         
         args = [
-            '--no-osd', '--no-keys', '--aspect-mode', 'letterbox', '-b',
+            '--no-osd', '--aspect-mode', 'letterbox',
             '--win', '{0},{1},{2},{3}'.format(x, y, x + width, y + height),
             '--layer', self._node.config.video_dispmanx_layer
         ]
@@ -165,7 +165,6 @@ class MediaPlayerGuiMixin(OverlayWindowGuiMixin):
         self.gui_mediaview.add_widget(self._media_playing)
 
     def _media_play_video_omxplayer(self, filepath, loop=False):
-        print("Triggering omxplayer")
         self._media_playing = ExternalMediaPlayer(
             filepath,
             (self.gui_mediaview.x, self.gui_mediaview.y,
@@ -178,8 +177,7 @@ class MediaPlayerGuiMixin(OverlayWindowGuiMixin):
         if isinstance(self._media_playing, Video):
             self._media_playing.unload()
         elif isinstance(self._media_playing, ExternalMediaPlayer):
-            if forced:
-                self._media_playing.force_stop()
+            self._media_playing.force_stop()
             self._media_playing = None
         elif isinstance(self._media_playing, StandardImage):
             pass

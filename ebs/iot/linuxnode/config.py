@@ -56,15 +56,15 @@ class IoTNodeConfig(object):
 
     @property
     def show_foundation(self):
-        return self._config.getboolean('display_rpi', 'show_foundation', fallback=True)
+        return self._config.getboolean('display-rpi', 'show_foundation', fallback=True)
 
     @property
     def dispmanx_foundation_layer(self):
-        return self._config.getint('display_rpi', 'dispmanx_foundation_layer', fallback=1)
+        return self._config.getint('display-rpi', 'dispmanx_foundation_layer', fallback=1)
 
     @property
     def foundation_image(self):
-        return self._config.get('display_rpi', 'foundation_image', fallback=None)
+        return self._config.get('display-rpi', 'foundation_image', fallback=None)
 
     @property
     def background(self):
