@@ -22,13 +22,16 @@ class MediaPlayerBusy(Exception):
 
 
 class ExternalMediaPlayer(object):
-    def __init__(self, filename, geometry, layer, when_done, reactor, loop=False):
+    def __init__(self, filename, geometry, layer,
+                 when_done, reactor, loop=False):
         x, y, width, height = geometry
         args = [
             '--no-osd', '--no-keys', '--aspect-mode', 'letterbox',
             '--win', '{0},{1},{2},{3}'.format(x, y, x + width, y + height),
             '--layer', layer,
         ]
+        if loop:
+            args.append(['--loop'])
         self._player = OMXPlayer(filename, args=args)
 
         def _exit_handler(player, exit_state):
@@ -155,7 +158,8 @@ class MediaPlayerGuiMixin(OverlayWindowGuiMixin):
             filepath,
             (self.gui_mediaview.x, self.gui_mediaview.y,
              self.gui_mediaview.width, self.gui_mediaview.height),
-            self.config.video_dispmanx_layer, self.media_stop, loop
+            self.config.video_dispmanx_layer, self.media_stop,
+            self.reactor, loop
         )
 
     def media_stop(self, forced=False):
