@@ -1,6 +1,7 @@
 
 
 import os
+import subprocess
 from kivy.uix.video import Video
 from omxplayer.player import OMXPlayer
 from twisted.internet.defer import Deferred
@@ -19,6 +20,36 @@ class MediaPlayerBusy(Exception):
     def __repr__(self):
         return "<MediaPlayerBusy Now Playing {0}" \
                "".format(self.now_playing)
+
+
+class BackdropManager(object):
+    def __init__(self):
+        self._process = None
+
+    def start(self, layer=None, x=None, y=None, width=None, height=None):
+        cmd = ['backdrop']
+        if layer:
+            cmd.extend(['-l', str(layer)])
+        if x:
+            cmd.extend(['-x', str(x)])
+        if y:
+            cmd.extend(['-y', str(y)])
+        if width:
+            cmd.extend(['-w', str(width)])
+        if height:
+            cmd.extend(['-h', str(height)])
+        self._process = subprocess.Popen(cmd, stdin=subprocess.PIPE)
+
+    def set_geometry(self, x, y, width, height):
+        if not self._process:
+            self.start(x, y, width, height)
+        self._process.stdin.write(
+            "{0},{1},{2},{3}\n".format(x, y, width, height)
+        )
+
+    def close(self):
+        if self._process:
+            self._process.terminate()
 
 
 class ExternalMediaPlayer(object):
@@ -129,6 +160,7 @@ class MediaPlayerGuiMixin(OverlayWindowGuiMixin):
     def __init__(self, *args, **kwargs):
         super(MediaPlayerGuiMixin, self).__init__(*args, **kwargs)
         self._media_player_external = None
+        self._media_player_backdrop = BackdropManager()
         self._media_playing = None
         self._gui_mediaview = None
 
@@ -189,6 +221,20 @@ class MediaPlayerGuiMixin(OverlayWindowGuiMixin):
         if self._gui_mediaview is None:
             self._gui_mediaview = ColorBoxLayout(bgcolor=(0, 0, 0, 0))
             self.gui_main_content.add_widget(self._gui_mediaview)
+
+            if self.config.video_show_backdrop:
+                self._media_player_backdrop.start(
+                    self.config.video_backdrop_dispmanx_layer,
+                    self.gui_mediaview.x, self.gui_mediaview.y,
+                    self.gui_mediaview.width, self.gui_mediaview.height
+                )
+
+                def _backdrop_geometry(widget, _):
+                    self._media_player_backdrop.set_geometry(
+                        widget.x, widget.y, widget.width, widget.height
+                    )
+                self.gui_mediaview.bind(size=_backdrop_geometry,
+                                        pos=_backdrop_geometry)
         return self._gui_mediaview
 
     def gui_setup(self):
