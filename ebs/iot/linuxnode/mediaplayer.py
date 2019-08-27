@@ -22,20 +22,24 @@ class MediaPlayerBusy(Exception):
 
 
 class ExternalMediaPlayer(object):
-    def __init__(self, filename, geometry, layer,
-                 when_done, reactor, loop=False):
+    def __init__(self, filepath, geometry, when_done, node, loop=False):
+        
+        self._node = node
         x, y, width, height = geometry
+        
         args = [
-            '--no-osd', '--no-keys', '--aspect-mode', 'letterbox',
+            '--no-osd', '--no-keys', '--aspect-mode', 'letterbox', '-b',
             '--win', '{0},{1},{2},{3}'.format(x, y, x + width, y + height),
-            '--layer', layer,
+            '--layer', self._node.config.video_dispmanx_layer
         ]
+
         if loop:
-            args.append(['--loop'])
-        self._player = OMXPlayer(filename, args=args)
+            args.append('--loop')
+
+        self._player = OMXPlayer(filepath, args=args)
 
         def _exit_handler(player, exit_state):
-            reactor.callFromThread(when_done)
+            self._node.reactor.callFromThread(when_done)
 
         self._player.exitEvent = _exit_handler
 
@@ -113,6 +117,10 @@ class MediaPlayerMixin(NodeLoggingMixin):
             self._media_player_deferred.callback(forced)
             self._media_player_deferred = None
 
+    def stop(self):
+        self.media_stop(forced=True)
+        super(MediaPlayerMixin, self).stop()
+
 
 class MediaPlayerGuiMixin(OverlayWindowGuiMixin):
     def __init__(self, *args, **kwargs):
@@ -154,12 +162,12 @@ class MediaPlayerGuiMixin(OverlayWindowGuiMixin):
         self.gui_mediaview.add_widget(self._media_playing)
 
     def _media_play_video_omxplayer(self, filepath, loop=False):
+        print("Triggering omxplayer")
         self._media_playing = ExternalMediaPlayer(
             filepath,
             (self.gui_mediaview.x, self.gui_mediaview.y,
              self.gui_mediaview.width, self.gui_mediaview.height),
-            self.config.video_dispmanx_layer, self.media_stop,
-            self.reactor, loop
+            self.media_stop, self, loop
         )
 
     def media_stop(self, forced=False):

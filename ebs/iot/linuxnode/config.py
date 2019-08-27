@@ -55,6 +55,18 @@ class IoTNodeConfig(object):
         return self._config.getfloat('display', 'sidebar_width', fallback=0.3)
 
     @property
+    def show_foundation(self):
+        return self._config.getboolean('display', 'show_foundation', fallback=True)
+
+    @property
+    def dispmanx_foundation_layer(self):
+        return self._config.getint('display', 'dispmanx_foundation_layer', fallback=1)
+
+    @property
+    def foundation_image(self):
+        return self._config.get('display', 'foundation_image', fallback=None)
+
+    @property
     def background(self):
         return self._config.get('display', 'background', fallback='images/background.png')
 
@@ -67,7 +79,7 @@ class IoTNodeConfig(object):
     def app_dispmanx_layer(self):
         if self.platform != 'rpi':
             raise AttributeError("dispmanx layer is an RPI thing")
-        return self._config.getint('display-rpi', 'dispmanx_app_layer', fallback=3)
+        return self._config.getint('display-rpi', 'dispmanx_app_layer', fallback=4)
 
     def _apply_display_layer(self):
         if self.platform == 'rpi':
@@ -171,7 +183,7 @@ class IoTNodeConfig(object):
     @property
     def video_dispmanx_layer(self):
         if self.platform == 'rpi':
-            return self._config.getint('video-rpi', 'dispmanx_video_layer', fallback=1)
+            return self._config.getint('video-rpi', 'dispmanx_video_layer', fallback=2)
 
     # Browser
     @property
@@ -198,7 +210,7 @@ class IoTNodeConfig(object):
     @property
     def browser_dispmanx_layer(self):
         if self.platform == 'rpi':
-            return self._config.get('browser-rpi', 'dispmanx_browser_layer', fallback=2)
+            return self._config.get('browser-rpi', 'dispmanx_browser_layer', fallback=3)
 
     # Fonts
     @property

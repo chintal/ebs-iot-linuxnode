@@ -1,6 +1,7 @@
 
 
 import os
+import subprocess
 from kivy.core.window import Window
 from kivy.uix.video import Video
 from kivy.uix.boxlayout import BoxLayout
@@ -141,6 +142,7 @@ class OverlayWindowGuiMixin(BackgroundGuiMixin):
 
     def __init__(self, *args, **kwargs):
         self._overlay_mode = None
+        self._foundation_process = None
         super(OverlayWindowGuiMixin, self).__init__(*args, **kwargs)
 
     @property
@@ -174,6 +176,20 @@ class OverlayWindowGuiMixin(BackgroundGuiMixin):
         # self.gui_bg_resume()
         Window.clearcolor = [0, 0, 0, 1]
 
+    def stop(self):
+        if self._foundation_process:
+            self._foundation_process.terminate()
+        super(OverlayWindowGuiMixin, self).close()
+
     def gui_setup(self):
         super(OverlayWindowGuiMixin, self).gui_setup()
+        if self.config.show_foundation and \
+                self.config.foundation_image and \
+                os.path.exists(self.config.foundation_image): 
+            
+            print("Starting Foundation")    
+            cmd = ['pngview', '-l', str(self.config.dispmanx_foundation_layer),
+                   '-n', self.config.foundation_image]
+            self._foundation_process = subprocess.Popen(cmd)
+
         self.overlay_mode = self.config.overlay_mode
