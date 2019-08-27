@@ -66,6 +66,7 @@ class BrowserManager(object):
         if not self._browser:
             return
         self._browser.close()
+        self._browser.quit()
 
 
 class BrowserMixin(ConfigMixin, BaseMixin):
