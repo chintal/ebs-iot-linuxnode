@@ -31,21 +31,22 @@ class BackdropManager(object):
         if layer:
             cmd.extend(['-l', str(layer)])
         if x:
-            cmd.extend(['-x', str(x)])
+            cmd.extend(['-x', str(int(x))])
         if y:
-            cmd.extend(['-y', str(y)])
+            cmd.extend(['-y', str(int(y))])
         if width:
-            cmd.extend(['-w', str(width)])
+            cmd.extend(['-w', str(int(width))])
         if height:
-            cmd.extend(['-h', str(height)])
+            cmd.extend(['-h', str(int(height))])
         self._process = subprocess.Popen(cmd, stdin=subprocess.PIPE)
 
     def set_geometry(self, x, y, width, height):
         if not self._process:
             self.start(x, y, width, height)
-        self._process.stdin.write(
-            "{0},{1},{2},{3}\n".format(x, y, width, height)
-        )
+        geometry = "{0},{1},{2},{3}\n".format(int(x), int(y), 
+                                              int(width), int(height))
+        self._process.stdin.write(geometry.encode())
+        self._process.stdin.flush()
 
     def close(self):
         if self._process:
@@ -209,7 +210,8 @@ class MediaPlayerGuiMixin(OverlayWindowGuiMixin):
         if isinstance(self._media_playing, Video):
             self._media_playing.unload()
         elif isinstance(self._media_playing, ExternalMediaPlayer):
-            self._media_playing.force_stop()
+            if forced:
+                self._media_playing.force_stop()
             self._media_playing = None
         elif isinstance(self._media_playing, StandardImage):
             pass
@@ -221,7 +223,7 @@ class MediaPlayerGuiMixin(OverlayWindowGuiMixin):
         if self._gui_mediaview is None:
             self._gui_mediaview = ColorBoxLayout(bgcolor=(0, 0, 0, 0))
             self.gui_main_content.add_widget(self._gui_mediaview)
-
+            
             if self.config.video_show_backdrop:
                 self._media_player_backdrop.start(
                     self.config.video_backdrop_dispmanx_layer,

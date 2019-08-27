@@ -79,7 +79,7 @@ class MarqueeGuiMixin(ConfigMixin, BaseGuiMixin):
             params = {'bgcolor': (self._gui_marquee_bgcolor or
                                   color_set_alpha(self.gui_color_2, 0.6)),
                       'color': [1, 1, 1, 1],
-                      'font_size': '36sp'}
+                      'font_size': '32sp'}
             if self.config.text_font_name:
                 params['font_name'] = self.config.text_font_name
             self._gui_marquee = MarqueeLabel(text='Marquee Text', **params)
