@@ -169,6 +169,7 @@ class MediaPlayerGuiMixin(OverlayWindowGuiMixin):
         elif isinstance(self._media_playing, ExternalMediaPlayer):
             if forced:
                 self._media_playing.force_stop()
+            self._media_playing = None
         elif isinstance(self._media_playing, StandardImage):
             pass
         self.gui_mediaview.clear_widgets()
