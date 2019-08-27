@@ -79,7 +79,8 @@ class ExternalMediaPlayer(object):
         self._player.stop()
 
     def set_geometry(self, x, y, width, height):
-        pass
+        if self._player:
+            self._player.set_video_pos(x, y, x + width, y + height)
 
 
 class MediaPlayerMixin(NodeLoggingMixin):
@@ -242,6 +243,14 @@ class MediaPlayerGuiMixin(OverlayWindowGuiMixin):
                     )
                 self.gui_mediaview.bind(size=_backdrop_geometry,
                                         pos=_backdrop_geometry)
+
+            def _child_geometry(widget, _):
+                if isinstance(self._media_playing, ExternalMediaPlayer):
+                    self._media_playing.set_geometry(
+                        widget.x, widget.y, widget.width, widget.height
+                    )
+            self.gui_mediaview.bind(size=_child_geometry,
+                                    pos=_child_geometry)
         return self._gui_mediaview
 
     def gui_setup(self):
