@@ -56,15 +56,15 @@ class IoTNodeConfig(object):
 
     @property
     def show_foundation(self):
-        return self._config.getboolean('display', 'show_foundation', fallback=True)
+        return self._config.getboolean('display_rpi', 'show_foundation', fallback=True)
 
     @property
     def dispmanx_foundation_layer(self):
-        return self._config.getint('display', 'dispmanx_foundation_layer', fallback=1)
+        return self._config.getint('display_rpi', 'dispmanx_foundation_layer', fallback=1)
 
     @property
     def foundation_image(self):
-        return self._config.get('display', 'foundation_image', fallback=None)
+        return self._config.get('display_rpi', 'foundation_image', fallback=None)
 
     @property
     def background(self):
@@ -79,7 +79,7 @@ class IoTNodeConfig(object):
     def app_dispmanx_layer(self):
         if self.platform != 'rpi':
             raise AttributeError("dispmanx layer is an RPI thing")
-        return self._config.getint('display-rpi', 'dispmanx_app_layer', fallback=4)
+        return self._config.getint('display-rpi', 'dispmanx_app_layer', fallback=5)
 
     def _apply_display_layer(self):
         if self.platform == 'rpi':
@@ -183,6 +183,15 @@ class IoTNodeConfig(object):
     @property
     def video_dispmanx_layer(self):
         if self.platform == 'rpi':
+            return self._config.getint('video-rpi', 'dispmanx_video_layer', fallback=3)
+
+    @property
+    def video_show_backdrop(self):
+        return self._config.getboolean('video-rpi', 'show_backdrop', fallback=False)
+
+    @property
+    def video_backdrop_dispmanx_layer(self):
+        if self.platform == 'rpi':
             return self._config.getint('video-rpi', 'dispmanx_video_layer', fallback=2)
 
     # Browser
@@ -210,7 +219,7 @@ class IoTNodeConfig(object):
     @property
     def browser_dispmanx_layer(self):
         if self.platform == 'rpi':
-            return self._config.get('browser-rpi', 'dispmanx_browser_layer', fallback=3)
+            return self._config.get('browser-rpi', 'dispmanx_browser_layer', fallback=4)
 
     # Fonts
     @property

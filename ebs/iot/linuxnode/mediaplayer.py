@@ -46,6 +46,9 @@ class ExternalMediaPlayer(object):
     def force_stop(self):
         self._player.stop()
 
+    def set_geometry(self, x, y, width, height):
+        pass
+
 
 class MediaPlayerMixin(NodeLoggingMixin):
     _media_extentions_image = ['.png', '.jpg', '.bmp', '.gif', '.jpeg']
