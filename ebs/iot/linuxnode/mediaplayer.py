@@ -4,6 +4,7 @@ import os
 import subprocess
 from kivy.uix.video import Video
 from omxplayer.player import OMXPlayer
+from dbus.exceptions import DBusException
 from twisted.internet.defer import Deferred
 
 from .widgets import StandardImage
@@ -68,19 +69,25 @@ class ExternalMediaPlayer(object):
         if loop:
             args.append('--loop')
 
-        self._player = OMXPlayer(filepath, args=args)
-
         def _exit_handler(player, exit_state):
             self._node.reactor.callFromThread(when_done)
 
-        self._player.exitEvent = _exit_handler
+        try:
+            self._player = OMXPlayer(filepath, args=args)
+            self._player.exitEvent = _exit_handler
+        except SystemError as e:
+            self._player = None
+            _exit_handler(None, 1)
 
     def force_stop(self):
         self._player.stop()
 
     def set_geometry(self, x, y, width, height):
         if self._player:
-            self._player.set_video_pos(x, y, x + width, y + height)
+            try:
+                self._player.set_video_pos(x, y, x + width, y + height)
+            except DBusException:
+                pass
 
 
 class MediaPlayerMixin(NodeLoggingMixin):
