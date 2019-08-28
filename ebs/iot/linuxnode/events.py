@@ -211,7 +211,7 @@ class EventManager(object):
             try:
                 eobj = session.query(self.db_model).filter_by(eid=eid).one()
             except NoResultFound:
-                return
+                return False
             # print("Commiting edel")
             session.delete(eobj)
             session.commit()
@@ -220,6 +220,7 @@ class EventManager(object):
             raise
         finally:
             session.close()
+        return True
 
     def _pointers(self, cond, resource=None, follow=False):
         session = self.db()
