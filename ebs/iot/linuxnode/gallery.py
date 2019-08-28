@@ -385,6 +385,7 @@ class GalleryGuiMixin(GalleryMixin, BaseGuiMixin):
 
     def gui_gallery_hide(self):
         self._gallery_visible = False
+        self.gui_gallery_current = None
         self.gui_gallery_parent.remove_widget(self.gui_gallery_container)
         self.gui_sidebar_right_hide()
 
@@ -409,7 +410,8 @@ class GalleryGuiMixin(GalleryMixin, BaseGuiMixin):
             def _when_done(_, instance):
                 self.gui_animation_layer.remove_widget(instance)
                 instance.size_hint = (1, 1)
-                self.gui_gallery_container.add_widget(instance)
+                if self.gui_gallery_container.parent == self.gui_gallery_parent:
+                    self.gui_gallery_container.add_widget(instance)
             self._gallery_entry_animation = Animation(
                     y=0, duration=2, t='in_out_elastic')
             self._gallery_entry_animation.bind(on_complete=_when_done)
