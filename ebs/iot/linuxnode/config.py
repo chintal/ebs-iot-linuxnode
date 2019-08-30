@@ -215,7 +215,7 @@ class IoTNodeConfig(object):
 
     @browser_default_url.setter
     def browser_default_url(self, value):
-        self._config.set('browser', 'default', value)
+        self._config.set('browser', 'default_url', value)
         self._write_config()
 
     @property
