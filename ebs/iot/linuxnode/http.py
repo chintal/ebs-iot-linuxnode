@@ -53,7 +53,7 @@ class DefaultHeadersHttpClient(HTTPClient):
         super(DefaultHeadersHttpClient, self).__init__(*args, **kwargs)
 
     def get(self, url, **kwargs):
-        headers = kwargs.pop('headers',{})
+        headers = kwargs.pop('headers', {})
         headers.update(self._default_headers)
         return super(DefaultHeadersHttpClient, self).get(url, **kwargs)
 
@@ -298,9 +298,7 @@ class HttpClientMixin(NetworkInfoMixin, NodeBusyMixin,
                 agent = ProxyAgent(proxy_endpoint)
                 if self.config.http_proxy_user:
                     auth = base64.b64encode(self.config.http_proxy_auth)
-                    self._http_headers = {
-                        'Proxy-Authorization': ["Basic {0}".format(auth.strip())]
-                    }
+                    self._http_headers['Proxy-Authorization'] = ["Basic {0}".format(auth.strip())]
             else:
                 agent = Agent(reactor=self.reactor)
             self._http_client = DefaultHeadersHttpClient(agent=agent,

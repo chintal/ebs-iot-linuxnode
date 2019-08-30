@@ -187,7 +187,8 @@ class IoTNodeConfig(object):
 
     @property
     def video_show_backdrop(self):
-        return self._config.getboolean('video-rpi', 'show_backdrop', fallback=False)
+        if self.platform == 'rpi':
+            return self._config.getboolean('video-rpi', 'show_backdrop', fallback=False)
 
     @property
     def video_backdrop_dispmanx_layer(self):
@@ -202,10 +203,11 @@ class IoTNodeConfig(object):
     @browser_show_default.setter
     def browser_show_default(self, value):
         if value:
-            value = True
+            value = 'yes'
         else:
-            value = False
+            value = 'no'
         self._config.set('browser', 'show_default', value)
+        self._write_config()
 
     @property
     def browser_default_url(self):

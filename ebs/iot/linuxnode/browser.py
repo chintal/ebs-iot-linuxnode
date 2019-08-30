@@ -47,8 +47,13 @@ class BrowserManager(object):
 
     @target.setter
     def target(self, value):
-        self._node.reactor.callInThread(self.browser.get, value)
-        self._target = value
+        if isinstance(self._browser, Deferred):
+            def _postponed(*args):
+                self.target = value
+            self._browser.addCallback(_postponed)
+        else:
+            self._node.reactor.callInThread(self.browser.get, value)
+            self._target = value
 
     def clear(self):
         self.target = 'about:blank'
