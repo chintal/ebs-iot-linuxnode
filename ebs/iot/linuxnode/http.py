@@ -60,7 +60,7 @@ class DefaultHeadersHttpClient(HTTPClient):
     def post(self, url, **kwargs):
         headers = kwargs.pop('headers', {})
         headers.update(self._default_headers)
-        return super(DefaultHeadersHttpClient, self).get(url, **kwargs)
+        return super(DefaultHeadersHttpClient, self).post(url, **kwargs)
 
 
 class WatchfulBodyCollector(Protocol):
@@ -256,6 +256,9 @@ class HttpClientMixin(NetworkInfoMixin, NodeBusyMixin,
     @staticmethod
     def _http_check_response(response):
         if 400 < response.code < 600:
+            # print(response.headers)
+            # d = response.content()
+            # d.addCallback(print)
             raise HTTPError(response=response)
         return response
 

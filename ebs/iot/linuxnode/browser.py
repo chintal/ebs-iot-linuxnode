@@ -63,7 +63,7 @@ class BrowserManager(object):
         return self.browser
 
     def terminate(self):
-        if not self._browser:
+        if not self._browser or isinstance(self._browser, Deferred):
             return
         self._browser.close()
         self._browser.quit()
@@ -107,7 +107,7 @@ class BrowserMixin(ConfigMixin, BaseMixin):
     def start(self):
         super(BrowserMixin, self).start()
         if self.config.browser_show_default:
-            self._reactor.callLater(2, self.browser_start)
+            self._reactor.callLater(1, self.browser_start)
 
     def stop(self):
         for bmid in self._browser_managers.keys():
