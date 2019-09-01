@@ -37,7 +37,8 @@ class BackdropManager(object):
 
 
 class ExternalMediaPlayer(object):
-    def __init__(self, filepath, geometry, when_done, node, layer=None, loop=False):
+    def __init__(self, filepath, geometry, when_done, node,
+                 layer=None, loop=False, dbus_name=None):
 
         if not layer:
             layer = self._node.config.video_dispmanx_layer
@@ -57,7 +58,10 @@ class ExternalMediaPlayer(object):
                 self._node.reactor.callFromThread(when_done)
 
         try:
-            self._player = OMXPlayer(filepath, args=args)
+            if dbus_name:
+                self._player = OMXPlayer(filepath, args=args, dbus_name=dbus_name)
+            else:
+                self._player = OMXPlayer(filepath, args=args)
             self._player.exitEvent = _exit_handler
         except SystemError as e:
             self._player = None
