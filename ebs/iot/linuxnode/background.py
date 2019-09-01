@@ -159,6 +159,11 @@ class BackgroundGuiMixin(ConfigMixin, BaseGuiMixin):
         elif isinstance(self.gui_bg, ExternalMediaPlayer):
             self.gui_bg.resume()
 
+    def stop(self):
+        if self._bg and isinstance(self._bg, ExternalMediaPlayer):
+            self._bg.force_stop()
+        super(BackgroundGuiMixin, self).stop()
+
     def gui_setup(self):
         super(BackgroundGuiMixin, self).gui_setup()
         self.gui_bg = self.config.background
