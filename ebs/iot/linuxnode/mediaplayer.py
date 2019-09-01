@@ -138,12 +138,14 @@ class MediaPlayerGuiMixin(OverlayWindowGuiMixin):
         self.gui_mediaview.add_widget(self._media_playing)
 
     def _media_play_video_omxplayer(self, filepath, loop=False):
+        print("Triggering Player")
         self._media_playing = ExternalMediaPlayer(
             filepath,
             (self.gui_mediaview.x, self.gui_mediaview.y,
              self.gui_mediaview.width, self.gui_mediaview.height),
             self.media_stop, self, loop
         )
+        print("Done Triggering Player")
 
     def media_stop(self, forced=False):
         print("Stopping Media : {0}".format(self._media_playing))

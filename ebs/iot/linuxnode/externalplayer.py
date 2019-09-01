@@ -64,6 +64,9 @@ class ExternalMediaPlayer(object):
                 self._player = OMXPlayer(filepath, args=args)
             self._player.exitEvent = _exit_handler
         except SystemError as e:
+            print("Got Exception")
+            print(e)
+            raise
             self._player = None
             _exit_handler(None, 1)
 
