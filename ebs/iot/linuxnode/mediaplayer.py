@@ -55,22 +55,24 @@ class BackdropManager(object):
 
 
 class ExternalMediaPlayer(object):
-    def __init__(self, filepath, geometry, when_done, node, loop=False):
-        
+    def __init__(self, filepath, geometry, when_done, node, layer=None, loop=False):
+
+        if not layer:
+            layer = self._node.config.video_dispmanx_layer
         self._node = node
         x, y, width, height = geometry
         
         args = [
-            '--no-osd', '--aspect-mode', 'letterbox',
+            '--no-osd', '--aspect-mode', 'letterbox', '--layer', layer,
             '--win', '{0},{1},{2},{3}'.format(x, y, x + width, y + height),
-            '--layer', self._node.config.video_dispmanx_layer
         ]
 
         if loop:
             args.append('--loop')
 
         def _exit_handler(player, exit_state):
-            self._node.reactor.callFromThread(when_done)
+            if when_done:
+                self._node.reactor.callFromThread(when_done)
 
         try:
             self._player = OMXPlayer(filepath, args=args)
@@ -80,7 +82,16 @@ class ExternalMediaPlayer(object):
             _exit_handler(None, 1)
 
     def force_stop(self):
-        self._player.stop()
+        if self._player:
+            self._player.stop()
+
+    def pause(self):
+        if self._player:
+            self._player.pause()
+
+    def resume(self):
+        if self._player:
+            self._player.play()
 
     def set_geometry(self, x, y, width, height):
         if self._player:

@@ -10,6 +10,7 @@ from six.moves.urllib.parse import urlparse
 from .widgets import BleedImage
 from .basemixin import BaseGuiMixin
 from .config import ConfigMixin
+from .mediaplayer import ExternalMediaPlayer
 
 
 class BackgroundGuiMixin(ConfigMixin, BaseGuiMixin):
@@ -66,31 +67,48 @@ class BackgroundGuiMixin(ConfigMixin, BaseGuiMixin):
     def gui_bg_video(self):
         return self._bg_video
 
-    @gui_bg_video.setter
-    def gui_bg_video(self, value):
-        if not os.path.exists(value):
-            return
-        if self._bg_image:
-            self.gui_bg_container.remove_widget(self._bg_image)
-            self._bg_image = None
-        if self._bg_video:
-            self.gui_bg_container.remove_widget(self._bg_video)
-            self._bg_video.unload()
-            self._bg_video = None
+    def _gui_bg_video_native(self, value):
         self._bg_video = Video(
             source=value, state='play',
             allow_stretch=True,
-            # FIXME This should and used to work, but broke for no apparent
-            # reason. Relying on the _when_done() instead. This should be
-            # tracked down and kivy bug should probably be filed.
-            # eos='loop'
         )
 
         def _when_done(*_):
             self._bg_video.state = 'play'
+
         self._bg_video.bind(eos=_when_done)
         self._bg = self._bg_video
         self.gui_bg_container.add_widget(self._bg_video)
+
+    def _gui_bg_video_external(self, value):
+        geometry = (self.gui_bg_container.x, self.gui_bg_container.y,
+                    self.gui_bg_container.width, self.gui_bg_container.height)
+        self._bg_video = ExternalMediaPlayer(
+            value, geometry, None, self,
+            self.config.background_dispmanx_layer, loop=True
+        )
+        self._bg = self._bg_video
+
+    @gui_bg_video.setter
+    def gui_bg_video(self, value):
+        if not os.path.exists(value):
+            return
+
+        if self._bg_image:
+            self.gui_bg_container.remove_widget(self._bg_image)
+            self._bg_image = None
+        if self._bg_video:
+            if isinstance(self._bg_video, Video):
+                self.gui_bg_container.remove_widget(self._bg_video)
+                self._bg_video.unload()
+            elif isinstance(self._bg_video, ExternalMediaPlayer):
+                self._bg_video.force_stop()
+            self._bg_video = None
+
+        if self.config.background_external_player:
+            self._gui_bg_video_external(value)
+        else:
+            self._gui_bg_video_native(value)
 
     @property
     def gui_bg(self):
@@ -114,12 +132,16 @@ class BackgroundGuiMixin(ConfigMixin, BaseGuiMixin):
         self.gui_main_content.remove_widget(self._bg_container)
         if isinstance(self.gui_bg, Video):
             self.gui_bg.state = 'pause'
+        elif isinstance(self.gui_bg, ExternalMediaPlayer):
+            self.gui_bg.pause()
 
     def gui_bg_resume(self):
         if not self._bg_container.parent:
             self.gui_main_content.add_widget(self._bg_container, len(self.gui_main_content.children))
         if isinstance(self.gui_bg, Video):
             self.gui_bg.state = 'play'
+        elif isinstance(self.gui_bg, ExternalMediaPlayer):
+            self.gui_bg.resume()
 
     def gui_setup(self):
         super(BackgroundGuiMixin, self).gui_setup()
