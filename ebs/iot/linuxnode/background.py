@@ -10,7 +10,7 @@ from six.moves.urllib.parse import urlparse
 from .widgets import BleedImage
 from .basemixin import BaseGuiMixin
 from .config import ConfigMixin
-from .mediaplayer import ExternalMediaPlayer
+from .externalplayer import ExternalMediaPlayer
 
 
 class BackgroundGuiMixin(ConfigMixin, BaseGuiMixin):
