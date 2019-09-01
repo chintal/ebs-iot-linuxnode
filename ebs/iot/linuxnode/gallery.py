@@ -385,7 +385,6 @@ class GalleryGuiMixin(GalleryMixin, BaseGuiMixin):
 
     def gui_gallery_hide(self):
         self._gallery_visible = False
-        self.gui_gallery_current = None
         self.gui_gallery_parent.remove_widget(self.gui_gallery_container)
         self.gui_sidebar_right_hide()
 
