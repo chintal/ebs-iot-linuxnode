@@ -39,6 +39,14 @@ class BackgroundGuiMixin(ConfigMixin, BaseGuiMixin):
         if self._bg_container is None:
             self._bg_container = BoxLayout()
             self.gui_main_content.add_widget(self._bg_container)
+
+            def _child_geometry(widget, _):
+                if isinstance(self._bg, ExternalMediaPlayer):
+                    self._bg.set_geometry(
+                        widget.x, widget.y, widget.width, widget.height
+                    )
+            self._bg_container.bind(size=_child_geometry,
+                                    pos=_child_geometry)
         return self._bg_container
 
     @property
@@ -88,6 +96,7 @@ class BackgroundGuiMixin(ConfigMixin, BaseGuiMixin):
             value, geometry, None, self,
             self.config.background_dispmanx_layer, loop=True
         )
+
         self._bg = self._bg_video
 
     @gui_bg_video.setter
