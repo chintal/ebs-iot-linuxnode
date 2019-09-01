@@ -81,6 +81,7 @@ class BackgroundGuiMixin(ConfigMixin, BaseGuiMixin):
         self.gui_bg_container.add_widget(self._bg_video)
 
     def _gui_bg_video_external(self, value):
+        self.log.info("Starting external background video player")
         geometry = (self.gui_bg_container.x, self.gui_bg_container.y,
                     self.gui_bg_container.width, self.gui_bg_container.height)
         self._bg_video = ExternalMediaPlayer(
@@ -106,8 +107,10 @@ class BackgroundGuiMixin(ConfigMixin, BaseGuiMixin):
             self._bg_video = None
 
         if self.config.background_external_player:
+            print("Using External Video")
             self._gui_bg_video_external(value)
         else:
+            print("Using Native Video")
             self._gui_bg_video_native(value)
 
     @property
@@ -116,11 +119,13 @@ class BackgroundGuiMixin(ConfigMixin, BaseGuiMixin):
 
     @gui_bg.setter
     def gui_bg(self, value):
+        self.log.info("Setting background to {value}", value=value)
         if not os.path.exists(value):
             value = self.config.background
 
         _media_extentions_image = ['.png', '.jpg', '.bmp', '.gif', '.jpeg']
         if os.path.splitext(value)[1] in _media_extentions_image:
+            print("Using Image")
             self.gui_bg_image = value
         else:
             self.gui_bg_video = value
@@ -129,6 +134,7 @@ class BackgroundGuiMixin(ConfigMixin, BaseGuiMixin):
         self.gui_bg = self.config.background
 
     def gui_bg_pause(self):
+        self.log.debug("Pausing Background")
         self.gui_main_content.remove_widget(self._bg_container)
         if isinstance(self.gui_bg, Video):
             self.gui_bg.state = 'pause'
@@ -136,6 +142,7 @@ class BackgroundGuiMixin(ConfigMixin, BaseGuiMixin):
             self.gui_bg.pause()
 
     def gui_bg_resume(self):
+        self.log.debug("Resuming Background")
         if not self._bg_container.parent:
             self.gui_main_content.add_widget(self._bg_container, len(self.gui_main_content.children))
         if isinstance(self.gui_bg, Video):
