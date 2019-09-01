@@ -46,7 +46,7 @@ class ExternalMediaPlayer(object):
         x, y, width, height = geometry
 
         args = [
-            '--no-osd', '--aspect-mode', 'letterbox', '--layer', layer,
+            '--no-osd', '--aspect-mode', 'letterbox', '--layer', str(layer),
             '--win', '{0},{1},{2},{3}'.format(x, y, x + width, y + height),
         ]
 
