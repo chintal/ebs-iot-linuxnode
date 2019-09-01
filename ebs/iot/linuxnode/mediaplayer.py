@@ -1,16 +1,15 @@
 
 
 import os
-import subprocess
 from kivy.uix.video import Video
-from omxplayer.player import OMXPlayer
-from dbus.exceptions import DBusException
 from twisted.internet.defer import Deferred
 
 from .widgets import StandardImage
 from .widgets import ColorBoxLayout
 from .log import NodeLoggingMixin
 from .background import OverlayWindowGuiMixin
+from .externalplayer import ExternalMediaPlayer
+from .externalplayer import BackdropManager
 
 
 class MediaPlayerBusy(Exception):
@@ -21,73 +20,6 @@ class MediaPlayerBusy(Exception):
     def __repr__(self):
         return "<MediaPlayerBusy Now Playing {0}" \
                "".format(self.now_playing)
-
-
-class BackdropManager(object):
-    def __init__(self):
-        self._process = None
-
-    def start(self, layer=None, x=None, y=None, width=None, height=None):
-        cmd = ['backdrop']
-        if layer:
-            cmd.extend(['-l', str(layer)])
-        if x:
-            cmd.extend(['-x', str(int(x))])
-        if y:
-            cmd.extend(['-y', str(int(y))])
-        if width:
-            cmd.extend(['-w', str(int(width))])
-        if height:
-            cmd.extend(['-h', str(int(height))])
-        self._process = subprocess.Popen(cmd, stdin=subprocess.PIPE)
-
-    def set_geometry(self, x, y, width, height):
-        if not self._process:
-            self.start(x, y, width, height)
-        geometry = "{0},{1},{2},{3}\n".format(int(x), int(y),
-                                              int(width), int(height))
-        self._process.stdin.write(geometry.encode())
-        self._process.stdin.flush()
-
-    def close(self):
-        if self._process:
-            self._process.terminate()
-
-
-class ExternalMediaPlayer(object):
-    def __init__(self, filepath, geometry, when_done, node, loop=False):
-        
-        self._node = node
-        x, y, width, height = geometry
-        
-        args = [
-            '--no-osd', '--aspect-mode', 'letterbox',
-            '--win', '{0},{1},{2},{3}'.format(x, y, x + width, y + height),
-            '--layer', self._node.config.video_dispmanx_layer
-        ]
-
-        if loop:
-            args.append('--loop')
-
-        def _exit_handler(player, exit_state):
-            self._node.reactor.callFromThread(when_done)
-
-        try:
-            self._player = OMXPlayer(filepath, args=args)
-            self._player.exitEvent = _exit_handler
-        except SystemError as e:
-            self._player = None
-            _exit_handler(None, 1)
-
-    def force_stop(self):
-        self._player.stop()
-
-    def set_geometry(self, x, y, width, height):
-        if self._player:
-            try:
-                self._player.set_video_pos(x, y, x + width, y + height)
-            except DBusException:
-                pass
 
 
 class MediaPlayerMixin(NodeLoggingMixin):
@@ -206,12 +138,14 @@ class MediaPlayerGuiMixin(OverlayWindowGuiMixin):
         self.gui_mediaview.add_widget(self._media_playing)
 
     def _media_play_video_omxplayer(self, filepath, loop=False):
+        print("Triggering Player")
         self._media_playing = ExternalMediaPlayer(
             filepath,
             (self.gui_mediaview.x, self.gui_mediaview.y,
              self.gui_mediaview.width, self.gui_mediaview.height),
             self.media_stop, self, loop
         )
+        print("Done Triggering Player")
 
     def media_stop(self, forced=False):
         print("Stopping Media : {0}".format(self._media_playing))

@@ -1,5 +1,13 @@
 
 
+# foundation    1
+# backdrop      2
+# background    3
+# video         4
+# browser       5
+# app           6
+
+
 import os
 from six.moves.configparser import ConfigParser
 from appdirs import user_config_dir
@@ -76,10 +84,19 @@ class IoTNodeConfig(object):
         self._write_config()
 
     @property
+    def background_external_player(self):
+        if self.platform == 'rpi':
+            return self._config.getboolean('display-rpi', 'background_external_player', fallback=False)
+
+    @property
+    def background_dispmanx_layer(self):
+        return self._config.getint('display-rpi', 'background_dispmanx_layer', fallback=3)
+
+    @property
     def app_dispmanx_layer(self):
         if self.platform != 'rpi':
             raise AttributeError("dispmanx layer is an RPI thing")
-        return self._config.getint('display-rpi', 'dispmanx_app_layer', fallback=5)
+        return self._config.getint('display-rpi', 'dispmanx_app_layer', fallback=6)
 
     def _apply_display_layer(self):
         if self.platform == 'rpi':
@@ -183,7 +200,7 @@ class IoTNodeConfig(object):
     @property
     def video_dispmanx_layer(self):
         if self.platform == 'rpi':
-            return self._config.getint('video-rpi', 'dispmanx_video_layer', fallback=3)
+            return self._config.getint('video-rpi', 'dispmanx_video_layer', fallback=4)
 
     @property
     def video_show_backdrop(self):
@@ -221,7 +238,7 @@ class IoTNodeConfig(object):
     @property
     def browser_dispmanx_layer(self):
         if self.platform == 'rpi':
-            return self._config.get('browser-rpi', 'dispmanx_browser_layer', fallback=4)
+            return self._config.get('browser-rpi', 'dispmanx_browser_layer', fallback=5)
 
     # Fonts
     @property
