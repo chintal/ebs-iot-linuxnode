@@ -1,11 +1,11 @@
 
 
-# foundation    1
-# backdrop      2
-# background    3
+# foundation    ()
+# backdrop      1
+# background    2
+# backdrop      3
 # video         4
-# browser       5
-# app           6
+# app           5
 
 
 import os
@@ -90,13 +90,13 @@ class IoTNodeConfig(object):
 
     @property
     def background_dispmanx_layer(self):
-        return self._config.getint('display-rpi', 'background_dispmanx_layer', fallback=3)
+        return self._config.getint('display-rpi', 'background_dispmanx_layer', fallback=2)
 
     @property
     def app_dispmanx_layer(self):
         if self.platform != 'rpi':
             raise AttributeError("dispmanx layer is an RPI thing")
-        return self._config.getint('display-rpi', 'dispmanx_app_layer', fallback=6)
+        return self._config.getint('display-rpi', 'dispmanx_app_layer', fallback=5)
 
     def _apply_display_layer(self):
         if self.platform == 'rpi':
@@ -210,7 +210,7 @@ class IoTNodeConfig(object):
     @property
     def video_backdrop_dispmanx_layer(self):
         if self.platform == 'rpi':
-            return self._config.getint('video-rpi', 'dispmanx_video_layer', fallback=2)
+            return self._config.getint('video-rpi', 'dispmanx_video_layer', fallback=1)
 
     # Browser
     @property
@@ -234,11 +234,6 @@ class IoTNodeConfig(object):
     def browser_default_url(self, value):
         self._config.set('browser', 'default_url', value)
         self._write_config()
-
-    @property
-    def browser_dispmanx_layer(self):
-        if self.platform == 'rpi':
-            return self._config.get('browser-rpi', 'dispmanx_browser_layer', fallback=5)
 
     # Fonts
     @property

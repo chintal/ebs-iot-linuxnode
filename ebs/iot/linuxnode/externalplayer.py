@@ -1,6 +1,7 @@
 
 
 import subprocess
+
 from omxplayer.player import OMXPlayer
 from dbus.exceptions import DBusException
 
@@ -21,6 +22,7 @@ class BackdropManager(object):
             cmd.extend(['-w', str(int(width))])
         if height:
             cmd.extend(['-h', str(int(height))])
+        print("Starting backdrop  : ", cmd)
         self._process = subprocess.Popen(cmd, stdin=subprocess.PIPE)
 
     def set_geometry(self, x, y, width, height):
@@ -33,17 +35,23 @@ class BackdropManager(object):
 
     def close(self):
         if self._process:
+            print("Terminating Backdrop")
+            self._process.stdin.write('0,0,0,0'.encode())
+            self._process.stdin.flush()
             self._process.terminate()
 
 
 class ExternalMediaPlayer(object):
     def __init__(self, filepath, geometry, when_done, node,
                  layer=None, loop=False, dbus_name=None):
-
+        
+        self._cover = None
+        self._node = node
         if not layer:
             layer = self._node.config.video_dispmanx_layer
-        self._node = node
-        x, y, width, height = geometry
+        self._layer = layer
+        self._geometry = geometry
+        x, y, width, height = self._geometry
 
         args = [
             '--no-osd', '--aspect-mode', 'letterbox', '--layer', str(layer),
@@ -54,6 +62,9 @@ class ExternalMediaPlayer(object):
             args.append('--loop')
 
         def _exit_handler(player, exit_state):
+            if self._cover:
+                self._cover.close()
+                self._cover = None
             if when_done:
                 self._node.reactor.callFromThread(when_done)
 
@@ -64,27 +75,39 @@ class ExternalMediaPlayer(object):
                 self._player = OMXPlayer(filepath, args=args)
             self._player.exitEvent = _exit_handler
         except SystemError as e:
-            print("Got Exception")
-            print(e)
-            raise
             self._player = None
             _exit_handler(None, 1)
 
     def force_stop(self):
         if self._player:
             self._player.stop()
+        if self._cover:
+            self._cover.close()
+            self._cover = None
 
     def pause(self):
         if self._player:
             self._player.pause()
+            if self._cover:
+                return
+            print("Set cover geometry ", self._geometry)
+            #self._cover = BackdropManager().start(self._layer + 1, 0, 0, 100, 100)
 
     def resume(self):
         if self._player:
             self._player.play()
+        if self._cover:
+            self._cover.close()
+            self._cover = None
 
     def set_geometry(self, x, y, width, height):
         if self._player:
             try:
                 self._player.set_video_pos(x, y, x + width, y + height)
+                self._geometry = (x, y, width, height)
+                if self._cover:
+                    # self._cover.set_geometry(x, y, width, height)
+                    print("Set cover geometry ", self._geometry)
             except DBusException:
                 pass
+

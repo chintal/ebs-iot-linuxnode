@@ -45,8 +45,8 @@ class BackgroundGuiMixin(ConfigMixin, BaseGuiMixin):
                     self._bg.set_geometry(
                         widget.x, widget.y, widget.width, widget.height
                     )
-            self._bg_container.bind(size=_child_geometry,
-                                    pos=_child_geometry)
+            self.gui_main_content.bind(size=_child_geometry,
+                                       pos=_child_geometry)
         return self._bg_container
 
     @property
@@ -93,11 +93,13 @@ class BackgroundGuiMixin(ConfigMixin, BaseGuiMixin):
         geometry = (self.gui_bg_container.x, self.gui_bg_container.y,
                     self.gui_bg_container.width, self.gui_bg_container.height)
         self._bg_video = ExternalMediaPlayer(
-            value, geometry, None, self, self.config.background_dispmanx_layer,
-            loop=True, dbus_name='org.mpris.MediaPlayer2.omxplayer2'
+            value, geometry, None, self, loop=True,
+            layer=self.config.background_dispmanx_layer,
+            dbus_name='org.mpris.MediaPlayer2.omxplayer1'
         )
 
         self._bg = self._bg_video
+        self._bg_external = self._bg_video
 
     @gui_bg_video.setter
     def gui_bg_video(self, value):
