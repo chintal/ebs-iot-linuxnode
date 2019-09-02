@@ -91,7 +91,7 @@ class ExternalMediaPlayer(object):
             if self._cover:
                 return
             print("Set cover geometry ", self._geometry)
-            #self._cover = BackdropManager().start(self._layer + 1, 0, 0, 100, 100)
+            # self._cover = BackdropManager().start(self._layer + 1, 0, 0, 100, 100)
 
     def resume(self):
         if self._player:

@@ -133,7 +133,7 @@ class BrowserGuiMixin(OverlayWindowGuiMixin):
         if not self.overlay_mode:
             self.overlay_mode = True
         self._browser_visible = True
-        self.gui_sidebar_right_show()
+        self.gui_sidebar_right_show('browser')
         self.browser.set_geometry(
             self.gui_sidebar_right.x, self.gui_sidebar_right.y,
             self.gui_sidebar_right.width, self.gui_sidebar_right.height
@@ -141,7 +141,7 @@ class BrowserGuiMixin(OverlayWindowGuiMixin):
 
     def gui_browser_hide(self):
         self._browser_visible = False
-        self.gui_sidebar_right_hide()
+        self.gui_sidebar_right_hide('browser')
 
     def gui_setup(self):
         super(BrowserGuiMixin, self).gui_setup()

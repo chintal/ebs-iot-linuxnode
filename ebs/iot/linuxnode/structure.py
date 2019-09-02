@@ -22,7 +22,7 @@ class BaseGuiStructureMixin(object):
         self._gui_content_root = None
         self._gui_main_content = None
         self._gui_sidebar_right = None
-        self._gui_sidebar_right_users = 0
+        self._gui_sidebar_right_users = set()
         self._gui_sidebar_left = None
         self._gui_animation_layer = None
         super(BaseGuiStructureMixin, self).__init__(*args, **kwargs)
@@ -143,15 +143,19 @@ class BaseGuiStructureMixin(object):
                                                 size_hint=(x_hint, 1))
         return self._gui_sidebar_right
 
-    def gui_sidebar_right_show(self):
-        self._gui_sidebar_right_users += 1
+    def gui_sidebar_right_show(self, key):
+        if not key:
+            key = 'unspecified'
+        self._gui_sidebar_right_users.add(key)
         if not self.gui_sidebar_right.parent:
             self.log.debug("Showing right sidebar")
             self.gui_content_root.add_widget(self.gui_sidebar_right)
 
-    def gui_sidebar_right_hide(self):
-        self._gui_sidebar_right_users -= 1
-        if self._gui_sidebar_right_users:
+    def gui_sidebar_right_hide(self, key):
+        if key not in self._gui_sidebar_right_users:
+            return
+        self._gui_sidebar_right_users.remove(key)
+        if len(self._gui_sidebar_right_users):
             return
         if self.gui_sidebar_right.parent:
             self.log.debug("Hiding right sidebar")

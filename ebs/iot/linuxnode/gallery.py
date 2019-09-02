@@ -381,12 +381,12 @@ class GalleryGuiMixin(GalleryMixin, BaseGuiMixin):
     def gui_gallery_show(self):
         self._gallery_visible = True
         self.gui_gallery_parent.add_widget(self.gui_gallery_container)
-        self.gui_sidebar_right_show()
+        self.gui_sidebar_right_show('gallery')
 
     def gui_gallery_hide(self):
         self._gallery_visible = False
         self.gui_gallery_parent.remove_widget(self.gui_gallery_container)
-        self.gui_sidebar_right_hide()
+        self.gui_sidebar_right_hide('gallery')
 
     @property
     def gallery_animation_distance(self):
