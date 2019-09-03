@@ -11,6 +11,15 @@ class BackdropManager(object):
         self._process = None
 
     def start(self, layer=None, x=None, y=None, width=None, height=None):
+        if not x:
+            x = 10
+        if not y:
+            y = 10
+        if not width:
+            width = 1
+        if not height:
+            height = 1
+
         cmd = ['backdrop']
         if layer:
             cmd.extend(['-l', str(layer)])
