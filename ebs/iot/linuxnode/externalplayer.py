@@ -91,12 +91,14 @@ class ExternalMediaPlayer(object):
     def force_stop(self):
         if self._player:
             self._player.stop()
+            self._player = None
 
     def pause(self):
         if self._player:
             self._pposition = self._player.position()
             self._pstate = self._player.playback_status()
             self._player.stop()
+            self._player = None
 
     def resume(self):
         self._launch_player(paused=True)
@@ -107,7 +109,7 @@ class ExternalMediaPlayer(object):
     def set_geometry(self, x, y, width, height):
         if self._player:
             try:
-                if self._player.playback_status() in ['Playing', 'Paused']:
+                if self._player:
                     self._player.set_video_pos(x, y, x + width, y + height)
                 self._geometry = (x, y, width, height)
             except DBusException:
