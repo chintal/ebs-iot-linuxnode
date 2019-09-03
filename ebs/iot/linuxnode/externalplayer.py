@@ -31,7 +31,6 @@ class BackdropManager(object):
             cmd.extend(['-w', str(int(width))])
         if height:
             cmd.extend(['-h', str(int(height))])
-        print("Starting backdrop  : ", cmd)
         self._process = subprocess.Popen(cmd, stdin=subprocess.PIPE)
 
     def set_geometry(self, x, y, width, height):
@@ -44,7 +43,6 @@ class BackdropManager(object):
 
     def close(self):
         if self._process:
-            print("Terminating Backdrop")
             self._process.stdin.write('0,0,0,0'.encode())
             self._process.stdin.flush()
             self._process.terminate()
@@ -89,32 +87,43 @@ class ExternalMediaPlayer(object):
             args.append('--loop')
 
         try:
+            # print("Launching player on {0} with {1}".format(self._dbus_name, self._filepath))
             self._player = OMXPlayer(self._filepath, args=args, dbus_name=self._dbus_name)
             if paused:
                 self._player.pause()
+            # print("Installing exit handler")
             self._player.exitEvent = self._exit_handler
         except SystemError as e:
             self._player = None
             self._exit_handler(None, 1)
+        # print("Done launching player")
 
     def force_stop(self):
         if self._player:
-            self._player.stop()
+            # print("Force stopping player")
+            self._player.quit()
             self._player = None
 
     def pause(self):
         if self._player:
+            # print("Pausing player")
             self._pposition = self._player.position()
             self._pstate = self._player.playback_status()
-            self._player.stop()
+            self._player.quit()
             self._player = None
+            # print("Done pausing")
 
     def resume(self):
+        if not self._pstate:
+            return
+        # print("Resuming player")
         self._launch_player(paused=True)
         if self._pposition:
             self._player.set_position(self._pposition)
-        if not self._pstate or self._pstate == "Playing":
+        if self._pstate == "Playing":
             self._player.play()
+        self._pstate = None
+        # print("Done resume")
 
     def set_geometry(self, x, y, width, height):
         self._geometry = (x, y, width, height)
