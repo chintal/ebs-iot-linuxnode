@@ -14,6 +14,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm.exc import NoResultFound
 
 from kivy.animation import Animation
+from kivy.uix.floatlayout import FloatLayout
 
 from .basemixin import BaseMixin
 from .basemixin import BaseGuiMixin
@@ -364,6 +365,7 @@ class GalleryGuiMixin(GalleryMixin, BaseGuiMixin):
         self._gallery_container = None
         self._gallery_visible = False
         self._gallery_image = None
+        self._gallery_animation_layer = None
         self._gallery_exit_animation = None
         self._gallery_entry_animation = None
         super(GalleryGuiMixin, self).__init__(*args, **kwargs)
@@ -371,6 +373,14 @@ class GalleryGuiMixin(GalleryMixin, BaseGuiMixin):
     @property
     def gui_gallery_parent(self):
         return self.gui_sidebar_right
+
+    @property
+    def gallery_animation_layer(self):
+        if not self._gallery_animation_layer:
+            self._gallery_animation_layer = FloatLayout()
+            self.gui_root.add_widget(self._gallery_animation_layer,
+                                     len(self.gui_root.children) - 1)
+        return self._gallery_animation_layer
 
     @property
     def gui_gallery_container(self):
@@ -386,6 +396,7 @@ class GalleryGuiMixin(GalleryMixin, BaseGuiMixin):
     def gui_gallery_hide(self):
         self._gallery_visible = False
         self.gui_gallery_parent.remove_widget(self.gui_gallery_container)
+        self.gallery_animation_layer.clear_widgets()
         self.gui_sidebar_right_hide('gallery')
 
     @property
@@ -396,7 +407,7 @@ class GalleryGuiMixin(GalleryMixin, BaseGuiMixin):
     def gallery_exit_animation(self):
         if not self._gallery_exit_animation:
             def _when_done(_, instance):
-                self.gui_animation_layer.remove_widget(instance)
+                self.gallery_animation_layer.remove_widget(instance)
             self._gallery_exit_animation = Animation(
                     y=self.gallery_animation_distance, t='in_out_elastic', 
                     duration=2)
@@ -407,7 +418,7 @@ class GalleryGuiMixin(GalleryMixin, BaseGuiMixin):
     def gallery_entry_animation(self):
         if not self._gallery_entry_animation:
             def _when_done(_, instance):
-                self.gui_animation_layer.remove_widget(instance)
+                self.gallery_animation_layer.remove_widget(instance)
                 instance.size_hint = (1, 1)
                 if self.gui_gallery_container.parent == self.gui_gallery_parent:
                     self.gui_gallery_container.add_widget(instance)
@@ -436,7 +447,7 @@ class GalleryGuiMixin(GalleryMixin, BaseGuiMixin):
             self.gui_gallery_container.remove_widget(self._gallery_image)
             self._gallery_image.size_hint = (None, None)
             self._gallery_image.pos = pos
-            self.gui_animation_layer.add_widget(self._gallery_image)
+            self.gallery_animation_layer.add_widget(self._gallery_image)
             self.gallery_exit_animation.start(self._gallery_image)
 
         if os.path.splitext(value)[1] in self._media_extentions_image:
@@ -452,7 +463,7 @@ class GalleryGuiMixin(GalleryMixin, BaseGuiMixin):
                 self.gui_gallery_container.pos[0],
                 self.gui_gallery_container.pos[1] - self.gallery_animation_distance
             )
-            self.gui_animation_layer.add_widget(self._gallery_image)
+            self.gallery_animation_layer.add_widget(self._gallery_image)
             self.gallery_entry_animation.start(self._gallery_image)
 
     def gui_setup(self):
