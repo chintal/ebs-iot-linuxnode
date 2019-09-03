@@ -107,11 +107,9 @@ class ExternalMediaPlayer(object):
             self._player.play()
 
     def set_geometry(self, x, y, width, height):
+        self._geometry = (x, y, width, height)
         if self._player:
             try:
-                if self._player:
-                    self._player.set_video_pos(x, y, x + width, y + height)
-                self._geometry = (x, y, width, height)
+                self._player.set_video_pos(x, y, x + width, y + height)
             except DBusException:
                 pass
-
