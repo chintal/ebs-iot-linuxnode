@@ -52,6 +52,7 @@ class MediaPlayerMixin(NodeLoggingMixin):
             return
         if duration:
             self._end_call = self.reactor.callLater(duration, self.media_stop)
+        self._mediaplayer_now_playing = os.path.basename(content)
         self.gui_bg_pause()
         if os.path.splitext(content)[1] in self._media_extentions_image:
             self.log.debug("Showing image {filename}",
@@ -62,7 +63,6 @@ class MediaPlayerMixin(NodeLoggingMixin):
                            filename=os.path.basename(content))
             self._media_play_video(content, loop)
         self._media_player_deferred = Deferred()
-        self._mediaplayer_now_playing = os.path.basename(content)
         return self._media_player_deferred
 
     def _media_play_image(self, filepath):
