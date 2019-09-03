@@ -20,6 +20,7 @@ class BackgroundGuiMixin(ConfigMixin, BaseGuiMixin):
         self._bg = None
         self._gui_background_color = kwargs.pop('background_color', None)
         self._bg_container = None
+        self._bg_current = None
         super(BackgroundGuiMixin, self).__init__(*args, **kwargs)
 
     def background_set(self, fpath):
@@ -132,11 +133,15 @@ class BackgroundGuiMixin(ConfigMixin, BaseGuiMixin):
         if not os.path.exists(value):
             value = self.config.background
 
+        if value == self._bg_current:
+            return
+
         _media_extentions_image = ['.png', '.jpg', '.bmp', '.gif', '.jpeg']
         if os.path.splitext(value)[1] in _media_extentions_image:
             self.gui_bg_image = value
         else:
             self.gui_bg_video = value
+        self._bg_current = value
 
     def gui_bg_update(self):
         self.gui_bg = self.config.background
