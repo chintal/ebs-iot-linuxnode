@@ -44,7 +44,7 @@ class BackdropManager(object):
 class ExternalMediaPlayer(object):
     def __init__(self, filepath, geometry, when_done, node,
                  layer=None, loop=False, dbus_name=None):
-        
+        self._player = None
         self._pposition = None
         self._pstate = None
         self._paused = False
@@ -59,6 +59,8 @@ class ExternalMediaPlayer(object):
         if not layer:
             layer = self._node.config.video_dispmanx_layer
         self._layer = layer
+
+        self._launch_player()
 
     def _exit_handler(self, player, exit_state):
         if self._cover:
