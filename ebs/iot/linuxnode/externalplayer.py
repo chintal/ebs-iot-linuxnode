@@ -102,8 +102,9 @@ class ExternalMediaPlayer(object):
 
     def resume(self):
         self._launch_player(paused=True)
-        self._player.set_position(self._pposition)
-        if self._pstate == "Playing":
+        if self._pposition:
+            self._player.set_position(self._pposition)
+        if not self._pstate or self._pstate == "Playing":
             self._player.play()
 
     def set_geometry(self, x, y, width, height):

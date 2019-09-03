@@ -118,10 +118,8 @@ class BackgroundGuiMixin(ConfigMixin, BaseGuiMixin):
             self._bg_video = None
 
         if self.config.background_external_player:
-            print("Using External Video")
             self._gui_bg_video_external(value)
         else:
-            print("Using Native Video")
             self._gui_bg_video_native(value)
 
     @property
@@ -136,7 +134,6 @@ class BackgroundGuiMixin(ConfigMixin, BaseGuiMixin):
 
         _media_extentions_image = ['.png', '.jpg', '.bmp', '.gif', '.jpeg']
         if os.path.splitext(value)[1] in _media_extentions_image:
-            print("Using Image")
             self.gui_bg_image = value
         else:
             self.gui_bg_video = value
