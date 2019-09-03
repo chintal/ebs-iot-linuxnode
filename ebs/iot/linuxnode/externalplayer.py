@@ -70,9 +70,6 @@ class ExternalMediaPlayer(object):
         self._launch_player()
 
     def _exit_handler(self, player, exit_state):
-        if self._cover:
-            self._cover.close()
-            self._cover = None
         if self._when_done and not self._paused:
             self._node.reactor.callFromThread(self._when_done)
 
@@ -114,7 +111,7 @@ class ExternalMediaPlayer(object):
             # print("Done pausing")
 
     def resume(self):
-        if not self._pstate:
+        if self._player or not self._pstate:
             return
         # print("Resuming player")
         self._launch_player(paused=True)
