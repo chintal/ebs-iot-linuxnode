@@ -45,69 +45,68 @@ class ExternalMediaPlayer(object):
     def __init__(self, filepath, geometry, when_done, node,
                  layer=None, loop=False, dbus_name=None):
         
+        self._pposition = None
+        self._pstate = None
+        self._paused = False
+        self._filepath = filepath
         self._cover = None
         self._node = node
+        self._loop = loop
+        self._dbus_name = dbus_name
+        self._geometry = geometry
+        self._when_done = when_done
+
         if not layer:
             layer = self._node.config.video_dispmanx_layer
         self._layer = layer
-        self._geometry = geometry
-        x, y, width, height = self._geometry
 
+    def _exit_handler(self, player, exit_state):
+        if self._cover:
+            self._cover.close()
+            self._cover = None
+        if self._when_done and not self._paused:
+            self._node.reactor.callFromThread(self._when_done)
+
+    def _launch_player(self, paused=False):
+        x, y, width, height = self._geometry
         args = [
-            '--no-osd', '--aspect-mode', 'letterbox', '--layer', str(layer),
+            '--no-osd', '--aspect-mode', 'letterbox',
+            '--layer', str(self._layer),
             '--win', '{0},{1},{2},{3}'.format(x, y, x + width, y + height),
         ]
-
-        if loop:
+        if self._loop:
             args.append('--loop')
 
-        def _exit_handler(player, exit_state):
-            if self._cover:
-                self._cover.close()
-                self._cover = None
-            if when_done:
-                self._node.reactor.callFromThread(when_done)
-
         try:
-            if dbus_name:
-                self._player = OMXPlayer(filepath, args=args, dbus_name=dbus_name)
-            else:
-                self._player = OMXPlayer(filepath, args=args)
-            self._player.exitEvent = _exit_handler
+            self._player = OMXPlayer(self._filepath, args=args, dbus_name=self._dbus_name)
+            if paused:
+                self._player.pause()
+            self._player.exitEvent = self._exit_handler
         except SystemError as e:
             self._player = None
-            _exit_handler(None, 1)
+            self._exit_handler(None, 1)
 
     def force_stop(self):
         if self._player:
             self._player.stop()
-        if self._cover:
-            self._cover.close()
-            self._cover = None
 
     def pause(self):
         if self._player:
-            self._player.pause()
-            if self._cover:
-                return
-            print("Set cover geometry ", self._geometry)
-            # self._cover = BackdropManager().start(self._layer + 1, 0, 0, 100, 100)
+            self._pposition = self._player.position()
+            self._pstate = self._player.playback_status()
+            self._player.stop()
 
     def resume(self):
-        if self._player:
+        self._launch_player(paused=True)
+        self._player.set_position(self._pposition)
+        if self._pstate == "Playing":
             self._player.play()
-        if self._cover:
-            self._cover.close()
-            self._cover = None
 
     def set_geometry(self, x, y, width, height):
         if self._player:
             try:
                 self._player.set_video_pos(x, y, x + width, y + height)
                 self._geometry = (x, y, width, height)
-                if self._cover:
-                    # self._cover.set_geometry(x, y, width, height)
-                    print("Set cover geometry ", self._geometry)
             except DBusException:
                 pass
 
