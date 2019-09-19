@@ -13,16 +13,17 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm.exc import NoResultFound
 
-from kivy.animation import Animation
 from kivy.uix.floatlayout import FloatLayout
 
 from .basemixin import BaseMixin
 from .basemixin import BaseGuiMixin
 from .resources import ASSET
-from .widgets import StandardImage
-from .widgets import ColorBoxLayout
+from .widgets import ImageGallery
 
 WEBRESOURCE = 1
+
+SIDEBAR = 1
+PLAYER = 2
 
 Base = declarative_base()
 metadata = Base.metadata
@@ -83,6 +84,10 @@ class GalleryResource(object):
         if self._rtype == WEBRESOURCE:
             self._resource = os.path.basename(urlparse(value).path)
 
+    @property
+    def duration(self):
+        return self._duration
+
     def commit(self):
         session = self._manager.db()
         try:
@@ -97,8 +102,8 @@ class GalleryResource(object):
             robj.duration = self._duration
 
             session.add(robj)
-            session.flush()
             session.commit()
+            session.flush()
         except:
             session.rollback()
             raise
@@ -123,20 +128,15 @@ class GalleryResource(object):
         return self._manager.db_model
 
 
-class GalleryManager(object):
-    def __init__(self, node, gmid, default_duration=8):
-        # TODO Extract db layer from here and EM into reusable format?
+class BaseGalleryManager(object):
+    def __init__(self, node, gmid, widget, default_duration=8):
         self._gmid = gmid
         self._node = node
+        self._widget = widget
+        self._default_duration = default_duration
         self._seq = 0
         self._task = None
-
-        self._db_engine = None
-        self._db = None
-        self._db_dir = None
-        _ = self.db
-
-        self._default_duration = default_duration
+        self._items = []
 
     @property
     def default_duration(self):
@@ -144,6 +144,95 @@ class GalleryManager(object):
 
     def flush(self, force=False):
         self._node.log.debug("Flushing gallery resources")
+        self._items = []
+        if force:
+            self._trigger_transition()
+
+    def _load(self, items):
+        return items
+
+    def load(self, items):
+        self._node.log.debug("Loading gallery resource list")
+        self.flush()
+        self._items = self._load(items)
+
+    def add_item(self, item):
+        raise NotImplementedError
+
+    def remove_item(self, item):
+        raise NotImplementedError
+
+    @property
+    def current_seq(self):
+        return self._seq
+
+    @property
+    def next_seq(self):
+        seq = self._seq + 1
+        if seq < len(self._items):
+            return seq
+        elif len(self._items):
+            return 0
+        else:
+            return -1
+
+    def start(self):
+        self._node.log.info("Starting Gallery Manager {gmid} of {name}",
+                            gmid=self._gmid, name=self.__class__.__name__)
+        self.step()
+
+    def step(self):
+        self._seq = self.next_seq
+        duration = self._trigger_transition(stopped=False)
+        if not duration:
+            duration = self.default_duration
+        self._task = deferLater(self._node.reactor, duration, self.step)
+
+        def _cancel_handler(failure):
+            failure.trap(CancelledError)
+        self._task.addErrback(_cancel_handler)
+        return self._task
+
+    def _trigger_transition(self, stopped=False):
+        # If current_seq is -1, that means the gallery is empty. This may be
+        # called repeatedly with -1. Use the returned duration to slow down
+        # unnecessary requests. This function should also appropriately handle
+        # creating or destroying gallery components.
+        if stopped or self.current_seq == -1:
+            self._widget.current = None
+            return 30
+        target = self._items[self.current_seq]
+        if target.rtype == WEBRESOURCE:
+            fp = self._node.resource_manager.get(target.resource).filepath
+            if not os.path.exists(fp):
+                self._widget.current = None
+                return 10
+            self._widget.current = fp
+        return target.duration
+
+    def stop(self):
+        if self._task:
+            self._task.cancel()
+        self._trigger_transition(stopped=True)
+
+    def render(self):
+        for item in self._items:
+            print(item)
+
+
+class GalleryManager(BaseGalleryManager):
+    def __init__(self, *args, **kwargs):
+        super(GalleryManager, self).__init__(*args, **kwargs)
+
+        self._db_engine = None
+        self._db = None
+        self._db_dir = None
+        _ = self.db
+
+        self._persistence_load()
+
+    def flush(self, force=False):
+        super(GalleryManager, self).flush(force=force)
         session = self.db()
         try:
             results = self.db_get_resources(session).all()
@@ -164,92 +253,37 @@ class GalleryManager(object):
             raise
         finally:
             session.close()
-        if force:
-            self._trigger_transition()
 
-    def load(self, items):
-        self._node.log.debug("Loading gallery resource list")
-        self.flush()
+    def _load(self, items):
+        _items = []
         for idx, (resource, duration) in enumerate(items):
             robj = GalleryResource(
                 self, seq=idx, rtype=WEBRESOURCE,
                 resource=resource, duration=duration
             )
             robj.commit()
+            _items.append(robj)
             r = self._node.resource_manager.get(resource)
             r.rtype = ASSET
             r.commit()
         self._fetch()
+        return _items
 
-    def add_item(self, item):
-        raise NotImplementedError
-
-    def remove_item(self, item):
-        raise NotImplementedError
-
-    @property
-    def current_seq(self):
-        return self._seq
-
-    @property
-    def next_seq(self):
-        session = self.db()
-        try:
-            self.db_get_resources(session=session,
-                                  seq=self.current_seq + 1).one()
-            return self.current_seq + 1
-        except NoResultFound:
-            pass
-        except:
-            self.render()
-            raise
-        finally:
-            session.close()
-        try:
-            self.db_get_resources(session=session,
-                                  seq=0).one()
-            return 0
-        except NoResultFound:
-            return -1
-        finally:
-            session.close()
-
-    def start(self):
-        self._node.log.info("Starting Gallery Manager {gmid} of {name}",
-                            gmid=self._gmid, name=self.__class__.__name__)
-        self.step()
-
-    def step(self):
-        self._seq = self.next_seq
-        duration = self._trigger_transition(stopped=False)
-        if not duration:
-            duration = self.default_duration
-        self._task = deferLater(self._node.reactor, duration, self.step)
-
-        def _cancel_handler(failure):
-            failure.trap(CancelledError)
-        self._task.addErrback(_cancel_handler)
-        return self._task
-
-    def _trigger_transition(self, stopped=False):
-        raise NotImplementedError
-
-    def stop(self):
-        if self._task:
-            self._task.cancel()
-        self._trigger_transition(stopped=True)
-
-    def render(self):
+    def _persistence_load(self):
         session = self.db()
         try:
             results = self.db_get_resources(session).all()
-        except:
-            session.rollback()
-            raise
+        except NoResultFound:
+            session.close()
+            return
+        try:
+            _items = []
+            for robj in results:
+                _items.append(GalleryResource(self, robj.seq))
         finally:
             session.close()
-        for result in results:
-            print(GalleryResource(self, result.seq))
+        self._items = _items
+        self._fetch()
 
     def db_get_resources(self, session, seq=None):
         q = session.query(self.db_model)
@@ -263,7 +297,7 @@ class GalleryManager(object):
 
     @property
     def db_model(self):
-        if self._gmid == WEBRESOURCE:
+        if self._gmid == SIDEBAR:
             return WebResourceGalleryModel
 
     @property
@@ -299,42 +333,18 @@ class GalleryManager(object):
                 r, semaphore=self._node.http_semaphore_download
             )
 
-
-class ResourceGalleryManager(GalleryManager):
-    @property
-    def resources(self):
+    def render(self):
+        print("----------")
+        super(GalleryManager, self).render()
+        print("DB Content")
+        print("----------")
         session = self.db()
         try:
             results = self.db_get_resources(session).all()
-        except:
-            session.rollback()
-            raise
         finally:
             session.close()
-        return [x.resource for x in results]
-
-    def _trigger_transition(self, stopped=False):
-        # If current_seq is -1, that means the gallery is empty. This may be
-        # called repeatedly with -1. Use the returned duration to slow down
-        # unnecessary requests. This function should also appropriately handle
-        # creating or destroying gallery components.
-        if stopped or self.current_seq == -1:
-            self._node.gui_gallery_current = None
-            return 30
-        session = self.db()
-        try:
-            target = self.db_get_resources(session, seq=self.current_seq).one()
-            if target.rtype == WEBRESOURCE:
-                fp = self._node.resource_manager.get(target.resource).filepath
-                if not os.path.exists(fp):
-                    self._node.gui_gallery_current = None
-                    return 10
-                self._node.gui_gallery_current = fp
-            return target.duration
-        except:
-            session.rollback()
-        finally:
-            session.close()
+        print(results)
+        print("----------")
 
 
 class GalleryMixin(BaseMixin):
@@ -345,29 +355,29 @@ class GalleryMixin(BaseMixin):
     def gallery_manager(self, gmid):
         if gmid not in self._gallery_managers.keys():
             self.log.info("Initializing gallery manager {gmid}", gmid=gmid)
-            self._gallery_managers[gmid] = ResourceGalleryManager(self, gmid)
+            self._gallery_managers[gmid] = GalleryManager(self, gmid, self.gui_gallery)
         return self._gallery_managers[gmid]
 
     def gallery_load(self, items):
-        self.gallery_manager(WEBRESOURCE).load(items)
+        self.gallery_manager(SIDEBAR).load(items)
 
     def gallery_start(self):
-        self.gallery_manager(WEBRESOURCE).start()
+        self.gallery_manager(SIDEBAR).start()
 
     def gallery_stop(self):
-        self.gallery_manager(WEBRESOURCE).stop()
+        self.gallery_manager(SIDEBAR).stop()
+
+    @property
+    def gui_gallery(self):
+        raise NotImplementedError
 
 
 class GalleryGuiMixin(GalleryMixin, BaseGuiMixin):
     _media_extentions_image = ['.png', '.jpg', '.bmp', '.gif', '.jpeg']
 
     def __init__(self, *args, **kwargs):
-        self._gallery_container = None
-        self._gallery_visible = False
-        self._gallery_image = None
+        self._gallery = None
         self._gallery_animation_layer = None
-        self._gallery_exit_animation = None
-        self._gallery_entry_animation = None
         super(GalleryGuiMixin, self).__init__(*args, **kwargs)
 
     @property
@@ -382,89 +392,21 @@ class GalleryGuiMixin(GalleryMixin, BaseGuiMixin):
                                      len(self.gui_root.children) - 1)
         return self._gallery_animation_layer
 
-    @property
-    def gui_gallery_container(self):
-        if not self._gallery_container:
-            self._gallery_container = ColorBoxLayout(bgcolor=[0, 0, 0, 1])
-        return self._gallery_container
-
-    def gui_gallery_show(self):
-        self._gallery_visible = True
-        self.gui_gallery_parent.add_widget(self.gui_gallery_container)
-        self.gui_sidebar_right_show('gallery')
-
-    def gui_gallery_hide(self):
-        self._gallery_visible = False
-        self.gui_gallery_parent.remove_widget(self.gui_gallery_container)
-        self.gallery_animation_layer.clear_widgets()
-        self.gui_sidebar_right_hide('gallery')
+    def _gui_gallery_sidebar_control(self, *args):
+        if self.gui_gallery.visible:
+            self.gui_sidebar_right_show('gallery')
+        else:
+            self.gui_sidebar_right_hide('gallery')
 
     @property
-    def gallery_animation_distance(self):
-        return self.gui_gallery_container.height
-
-    @property
-    def gallery_exit_animation(self):
-        if not self._gallery_exit_animation:
-            def _when_done(_, instance):
-                self.gallery_animation_layer.remove_widget(instance)
-            self._gallery_exit_animation = Animation(
-                    y=self.gallery_animation_distance, t='in_out_elastic', 
-                    duration=2)
-            self._gallery_exit_animation.bind(on_complete=_when_done)
-        return self._gallery_exit_animation
-
-    @property
-    def gallery_entry_animation(self):
-        if not self._gallery_entry_animation:
-            def _when_done(_, instance):
-                self.gallery_animation_layer.remove_widget(instance)
-                instance.size_hint = (1, 1)
-                if self.gui_gallery_container.parent == self.gui_gallery_parent:
-                    self.gui_gallery_container.add_widget(instance)
-            self._gallery_entry_animation = Animation(
-                    y=0, duration=2, t='in_out_elastic')
-            self._gallery_entry_animation.bind(on_complete=_when_done)
-        return self._gallery_entry_animation
-
-    @property
-    def gui_gallery_current(self):
-        return self._gallery_image
-
-    @gui_gallery_current.setter
-    def gui_gallery_current(self, value):
-        if value is None:
-            if not self.gui_gallery_container:
-                return
-            if not self._gallery_image:
-                return
-            self.gui_gallery_container.remove_widget(self._gallery_image)
-            self._gallery_image = None
-            self.gui_gallery_hide()
-            return
-        if self._gallery_image:
-            pos = self._gallery_image.pos
-            self.gui_gallery_container.remove_widget(self._gallery_image)
-            self._gallery_image.size_hint = (None, None)
-            self._gallery_image.pos = pos
-            self.gallery_animation_layer.add_widget(self._gallery_image)
-            self.gallery_exit_animation.start(self._gallery_image)
-
-        if os.path.splitext(value)[1] in self._media_extentions_image:
-            self._gallery_image = StandardImage(source=value, allow_stretch=True,
-                                                keep_ratio=True, anim_delay=0.08)
-            if not self._gallery_visible:
-                self.gui_gallery_container.add_widget(self._gallery_image)
-                self.gui_gallery_show()
-                return
-            self._gallery_image.size_hint = (None, None)
-            self._gallery_image.size = self.gui_gallery_container.size
-            self._gallery_image.pos = (
-                self.gui_gallery_container.pos[0],
-                self.gui_gallery_container.pos[1] - self.gallery_animation_distance
+    def gui_gallery(self):
+        if not self._gallery:
+            self._gallery = ImageGallery(
+                parent_layout=self.gui_gallery_parent,
+                animation_layer=self.gallery_animation_layer
             )
-            self.gallery_animation_layer.add_widget(self._gallery_image)
-            self.gallery_entry_animation.start(self._gallery_image)
+            self._gallery.bind(visible=self._gui_gallery_sidebar_control)
+        return self._gallery
 
     def gui_setup(self):
         super(GalleryGuiMixin, self).gui_setup()

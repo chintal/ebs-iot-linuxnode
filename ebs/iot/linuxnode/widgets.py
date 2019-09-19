@@ -1,5 +1,6 @@
 
 
+import os
 import re
 from PIL import Image as PILImage
 from itertools import chain
@@ -16,6 +17,7 @@ from kivy.graphics import Color
 from kivy.graphics import Rectangle
 from kivy.properties import ListProperty
 from kivy.properties import NumericProperty
+from kivy.properties import BooleanProperty
 from kivy.graphics.texture import Texture
 from kivy.animation import Animation
 
@@ -189,6 +191,92 @@ class BleedImage(BackgroundColorMixin, SizeProofImage):
     def _autoset_bg_color(self, *_):
         color = ColorThief(self.source).get_color(5)
         self.bgcolor = (x/255 for x in color)
+
+
+class ImageGallery(ColorBoxLayout):
+    visible = BooleanProperty(False)
+
+    def __init__(self, **kwargs):
+        self.parent_layout = kwargs.pop('parent_layout')
+        self.animation_layer = kwargs.pop('animation_layer', None)
+        super(ImageGallery, self).__init__(bgcolor=[0, 0, 0, 1], **kwargs)
+        self.bind(visible=self._set_visibility)
+        self._exit_animation = None
+        self._entry_animation = None
+        self._image = None
+
+    def _set_visibility(self, *args):
+        if self.visible:
+            self.show()
+        else:
+            self.hide()
+
+    def show(self):
+        self.parent_layout.add_widget(self)
+
+    def hide(self):
+        self.parent_layout.remove_widget(self)
+        self.animation_layer.clear_widgets()
+
+    @property
+    def animation_distance(self):
+        return self.height
+
+    @property
+    def exit_animation(self):
+        if not self._exit_animation:
+            def _when_done(_, instance):
+                self.animation_layer.remove_widget(instance)
+            self._exit_animation = Animation(y=self.animation_distance,
+                                             t='in_out_elastic', duration=2)
+            self._exit_animation.bind(on_complete=_when_done)
+        return self._exit_animation
+
+    @property
+    def entry_animation(self):
+        if not self._entry_animation:
+            def _when_done(_, instance):
+                self.animation_layer.remove_widget(instance)
+                instance.size_hint = (1, 1)
+                if self.parent == self.parent_layout:
+                    self.add_widget(instance)
+            self._entry_animation = Animation(y=0, duration=2,
+                                              t='in_out_elastic')
+            self._entry_animation.bind(on_complete=_when_done)
+        return self._entry_animation
+
+    @property
+    def current(self):
+        return self._image
+
+    @current.setter
+    def current(self, value):
+        if value is None:
+            if not self._image:
+                return
+            self.remove_widget(self._image)
+            self._image = None
+            self.visible = False
+            return
+        if self._image:
+            pos = self._image.pos
+            self.remove_widget(self._image)
+            self._image.size_hint = (None, None)
+            self._image.pos = pos
+            self.animation_layer.add_widget(self._image)
+            self.exit_animation.start(self._image)
+
+        self._image = StandardImage(source=value, allow_stretch=True,
+                                    keep_ratio=True, anim_delay=0.08)
+        if not self.visible:
+            self.add_widget(self._image)
+            self.visible = True
+            return
+        self._image.size_hint = (None, None)
+        self._image.size = self.size
+        self._image.pos = (self.pos[0], self.pos[1] - self.animation_distance)
+        self.animation_layer.add_widget(self._image)
+        self.entry_animation.start(self._image)
 
 
 class Gradient(object):
