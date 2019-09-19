@@ -129,7 +129,7 @@ class GalleryResource(object):
 
 
 class BaseGalleryManager(object):
-    def __init__(self, node, gmid, widget, default_duration=8):
+    def __init__(self, node, gmid, widget, default_duration=4):
         self._gmid = gmid
         self._node = node
         self._widget = widget
