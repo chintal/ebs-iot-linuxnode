@@ -17,7 +17,7 @@ from kivy.uix.label import Label
 from kivy.uix.scrollview import ScrollView
 from kivy.effects.scroll import ScrollEffect
 from kivy.utils import get_hex_from_color
-from .widgets import ColorLabel
+from .widgets.colors import ColorLabel
 
 from .config import ConfigMixin
 from .basemixin import BaseMixin

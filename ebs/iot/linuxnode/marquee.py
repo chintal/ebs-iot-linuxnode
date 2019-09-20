@@ -1,8 +1,8 @@
 
 from twisted.internet.defer import Deferred
 
-from .widgets import color_set_alpha
-from .widgets import MarqueeLabel
+from .widgets.colors import color_set_alpha
+from .widgets.marquee import MarqueeLabel
 
 from .basemixin import BaseGuiMixin
 from .config import ConfigMixin

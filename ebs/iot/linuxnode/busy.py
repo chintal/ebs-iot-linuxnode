@@ -1,7 +1,7 @@
 
 
 from kivy.garden.progressspinner import TextureProgressSpinner
-from .widgets import Gradient
+from .widgets.colors import Gradient
 from .basemixin import BaseMixin
 from .basemixin import BaseGuiMixin
 from .log import NodeLoggingMixin

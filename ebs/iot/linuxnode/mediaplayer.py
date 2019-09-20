@@ -4,8 +4,8 @@ import os
 from kivy.uix.video import Video
 from twisted.internet.defer import Deferred
 
-from .widgets import StandardImage
-from .widgets import ColorBoxLayout
+from .widgets.image import StandardImage
+from .widgets.colors import ColorBoxLayout
 from .log import NodeLoggingMixin
 from .background import OverlayWindowGuiMixin
 from .externalplayer import ExternalMediaPlayer

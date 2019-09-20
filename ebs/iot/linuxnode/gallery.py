@@ -18,7 +18,7 @@ from kivy.uix.floatlayout import FloatLayout
 from .basemixin import BaseMixin
 from .basemixin import BaseGuiMixin
 from .resources import ASSET
-from .widgets import ImageGallery
+from .widgets.gallery import ImageGallery
 
 WEBRESOURCE = 1
 

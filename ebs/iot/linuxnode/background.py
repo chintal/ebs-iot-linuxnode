@@ -7,7 +7,7 @@ from kivy.uix.video import Video
 from kivy.uix.boxlayout import BoxLayout
 from six.moves.urllib.parse import urlparse
 
-from .widgets import BleedImage
+from .widgets.image import BleedImage
 from .basemixin import BaseGuiMixin
 from .config import ConfigMixin
 from .externalplayer import ExternalMediaPlayer
