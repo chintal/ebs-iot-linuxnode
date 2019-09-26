@@ -13,7 +13,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm.exc import NoResultFound
 
-from kivy.uix.floatlayout import FloatLayout
+from kivy.uix.relativelayout import RelativeLayout
 
 from .basemixin import BaseMixin
 from .basemixin import BaseGuiMixin
@@ -377,20 +377,15 @@ class GalleryGuiMixin(GalleryMixin, BaseGuiMixin):
 
     def __init__(self, *args, **kwargs):
         self._gallery = None
-        self._gallery_animation_layer = None
+        self._gallery_parent_layout = None
         super(GalleryGuiMixin, self).__init__(*args, **kwargs)
 
     @property
     def gui_gallery_parent(self):
-        return self.gui_sidebar_right
-
-    @property
-    def gallery_animation_layer(self):
-        if not self._gallery_animation_layer:
-            self._gallery_animation_layer = FloatLayout()
-            self.gui_root.add_widget(self._gallery_animation_layer,
-                                     len(self.gui_root.children) - 1)
-        return self._gallery_animation_layer
+        if not self._gallery_parent_layout:
+            self._gallery_parent_layout = RelativeLayout()
+            self.gui_sidebar_right.add_widget(self._gallery_parent_layout)
+        return self._gallery_parent_layout
 
     def _gui_gallery_sidebar_control(self, *args):
         if self.gui_gallery.visible:
@@ -401,10 +396,7 @@ class GalleryGuiMixin(GalleryMixin, BaseGuiMixin):
     @property
     def gui_gallery(self):
         if not self._gallery:
-            self._gallery = ImageGallery(
-                parent_layout=self.gui_gallery_parent,
-                animation_layer=self.gallery_animation_layer
-            )
+            self._gallery = ImageGallery(parent_layout=self.gui_gallery_parent)
             self._gallery.bind(visible=self._gui_gallery_sidebar_control)
         return self._gallery
 

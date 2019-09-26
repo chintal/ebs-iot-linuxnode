@@ -10,6 +10,7 @@ from .colors import BackgroundColorMixin
 from kivy.graphics.opengl import glGetIntegerv
 from kivy.graphics.opengl import GL_MAX_TEXTURE_SIZE
 _image_max_size = glGetIntegerv(GL_MAX_TEXTURE_SIZE)[0]
+# _image_max_size = 2000
 
 
 class SizeProofImage(Image):
@@ -31,14 +32,13 @@ class SizeProofImage(Image):
         Image.__init__(self, **kwargs)
 
 
-class StandardImage(SizeProofImage):
-    pass
+StandardImage = SizeProofImage
 
 
-class BleedImage(BackgroundColorMixin, SizeProofImage):
+class BleedImage(BackgroundColorMixin, StandardImage):
     def __init__(self, **kwargs):
         bgcolor = kwargs.pop('bgcolor', 'auto')
-        SizeProofImage.__init__(self, **kwargs)
+        StandardImage.__init__(self, **kwargs)
         BackgroundColorMixin.__init__(self)
         if bgcolor == 'auto':
             self._autoset_bg_color()

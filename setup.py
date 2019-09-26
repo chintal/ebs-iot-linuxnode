@@ -28,6 +28,9 @@ _requires = [
 
     # RPi Mediaplayer
     'omxplayer-wrapper',
+
+    # PdfPlayer
+    'pdf2image',
 ]
 
 setuptools.setup(
