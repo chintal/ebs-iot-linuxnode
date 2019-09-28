@@ -6,6 +6,8 @@ from datetime import timedelta
 from cached_property import threaded_cached_property_with_ttl
 from six.moves.urllib.parse import urlparse
 from twisted.internet.task import deferLater
+from twisted.internet.threads import deferToThread
+from twisted.internet.defer import DeferredSemaphore
 
 from sqlalchemy import Column
 from sqlalchemy import Integer
@@ -20,6 +22,7 @@ from .basenode import BaseIoTNode
 from .resources import CacheableResource
 from .mediaplayer import MediaPlayerBusy
 from .marquee import MarqueeBusy
+from .widgets.pdfplayer import generate_pdf_images
 
 
 Base = declarative_base()
@@ -198,7 +201,14 @@ class EventManager(object):
         self._execute_task = None
         self._current_event = None
         self._current_event_resource = None
+        self._preprocess_semaphore = None
         _ = self.db
+
+    @property
+    def preprocess_semaphore(self):
+        if self._preprocess_semaphore is None:
+            self._preprocess_semaphore = DeferredSemaphore(1)
+        return self._preprocess_semaphore
 
     def insert(self, eid, **kwargs):
         event = Event(self, eid, **kwargs)
@@ -460,6 +470,17 @@ class WebResourceEventManager(EventManager):
         except NotImplementedError:
             self._node.log.debug("Node has no media event success reporter")
 
+    def _preprocess_pdf(self, filepath):
+        name = os.path.splitext(os.path.basename(filepath))[0]
+        target = os.path.join(self._node.config.temp_dir, name)
+        return deferToThread(generate_pdf_images, filepath, target, None)
+
+    def _preprocess_resource(self, maybe_failure, resource):
+        if os.path.splitext(resource.filename)[1] == '.pdf':
+            self.preprocess_semaphore.run(
+                self._preprocess_pdf, resource.filepath
+            )
+
     def _fetch(self):
         self._node.log.info("Triggering Fetch")
         session = self.db()
@@ -474,9 +495,10 @@ class WebResourceEventManager(EventManager):
             if e.start_time - datetime.now() > timedelta(seconds=1200):
                 break
             r = self._node.resource_manager.get(e.resource)
-            self._node.resource_manager.prefetch(
+            d = self._node.resource_manager.prefetch(
                 r, semaphore=self._node.http_semaphore_download
             )
+            d.addCallback(self._preprocess_resource, r)
         self._fetch_task = deferLater(self._node.reactor, 600, self._fetch)
 
     def _fetch_scheduler(self):
