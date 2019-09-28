@@ -11,13 +11,37 @@ from pdf2image import convert_from_path
 from kivy.properties import StringProperty
 from kivy.properties import BooleanProperty
 from kivy.properties import NumericProperty
+from kivy.uix.floatlayout import FloatLayout
 from kivy.clock import Clock
 
 from .gallery import ImageGallery
 
 
-class PDFPlayer(ImageGallery):
-    _animation_vector = (-1, 0)
+def generate_pdf_images(source, target, callback):
+
+    if not os.path.exists(source):
+        raise FileNotFoundError(source)
+
+    if os.path.exists(target):
+        if callback:
+            callback()
+        return
+
+    os.makedirs(target, exist_ok=True)
+
+    def _namegen():
+        while True:
+            yield 'page'
+
+    convert_from_path(source, fmt='png', dpi=100,
+                      output_folder=target,
+                      output_file=_namegen())
+
+    if callback:
+        callback()
+
+
+class PDFPlayer(FloatLayout):
     source = StringProperty()
     loop = BooleanProperty(True)
     interval = NumericProperty(5)
@@ -25,8 +49,13 @@ class PDFPlayer(ImageGallery):
     def __init__(self, source, loop=True, temp_dir=None, **kwargs):
         super(PDFPlayer, self).__init__(**kwargs)
 
+        self._gallery = ImageGallery(parent_layout=self,
+                                     animation_vector=(-1, 0))
+        self._gallery.transition = 'in_out_expo'
+
         self._current_page = -1
         self._task = None
+        self._cancelled = False
         self._pages = []
 
         if not temp_dir:
@@ -37,8 +66,6 @@ class PDFPlayer(ImageGallery):
         self.bind(source=self._load_source)
         self.bind(interval=self.start)
 
-        self.transition = 'in_out_expo'
-
         self.loop = loop
         self.source = source
 
@@ -48,15 +75,7 @@ class PDFPlayer(ImageGallery):
         return os.path.join(self._temp_dir, name)
 
     def _generate_images(self, callback):
-
-        os.makedirs(self.pages_dir, exist_ok=True)
-        pages = convert_from_path(self.source)
-        for idx, page in enumerate(pages):
-            page_file = os.path.join(self.pages_dir, '{}.png'.format(idx))
-            with open(page_file, 'wb') as f:
-                page.save(f)
-
-        callback()
+        generate_pdf_images(self.source, self.pages_dir, callback)
 
     def _load_source(self, *_):
         if not self.source:
@@ -72,14 +91,19 @@ class PDFPlayer(ImageGallery):
             self._start_display()
 
     def _start_display(self):
-        def _sort_key(filename):
-            return int(os.path.splitext(os.path.basename(filename))[0])
+        if self._cancelled:
+            return
+
+        def _sort_key(filepath):
+            fname = os.path.splitext(os.path.basename(filepath))[0]
+            return int(fname.split('-')[1])
 
         self._pages = sorted(glob.glob(os.path.join(self.pages_dir, '*.png')),
                              key=_sort_key)
         self.start()
 
     def stop(self):
+        self._cancelled = True
         if self._task:
             self._task.cancel()
 
@@ -91,7 +115,7 @@ class PDFPlayer(ImageGallery):
 
     def step(self, *_):
         self._current_page = self._next_page()
-        self.current = self._pages[self._current_page]
+        self._gallery.current = self._pages[self._current_page]
 
     def start(self):
         self.stop()
