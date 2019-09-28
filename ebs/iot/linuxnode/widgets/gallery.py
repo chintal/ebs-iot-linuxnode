@@ -16,20 +16,24 @@ from .image import StandardImage
 class ImageGallery(ColorBoxLayout):
     visible = BooleanProperty(False)
     transition = StringProperty('in_out_elastic')
-    _animation_vector = (0, 1)
 
     def __init__(self, **kwargs):
         self.parent_layout = kwargs.pop('parent_layout')
+        self._animation_vector = kwargs.pop('animation_vector', (0, 1))
+
         self._animation_layer = None
-        super(ImageGallery, self).__init__(bgcolor=[0, 0, 0, 1], **kwargs)
-        self.bind(visible=self._set_visibility)
-        self.bind(size=self._calculate_animation_distance)
-        self.bind(transition=self._reset_transitions)
         self._exit_animation = None
         self._entry_animation = None
         self._anim_distance_x = None
         self._anim_distance_y = None
         self._animation_distance = None
+
+        super(ImageGallery, self).__init__(bgcolor=[0, 0, 0, 1], **kwargs)
+
+        self.bind(visible=self._set_visibility)
+        self.bind(size=self._calculate_animation_distance)
+        self.bind(transition=self._reset_transitions)
+
         self._image = None
 
     def _set_visibility(self, *args):
@@ -104,6 +108,13 @@ class ImageGallery(ColorBoxLayout):
             self._entry_animation.bind(on_complete=_when_done)
         return self._entry_animation
 
+    def _detach_image(self):
+        if self._image:
+            if self._image.parent == self:
+                self.remove_widget(self._image)
+            elif self._image.parent == self.animation_layer:
+                self.animation_layer.remove_widget(self._image)
+
     @property
     def current(self):
         return self._image
@@ -112,14 +123,13 @@ class ImageGallery(ColorBoxLayout):
     def current(self, value):
         if value is None:
             self.visible = False
-            if not self._image:
-                return
-            self.remove_widget(self._image)
+            self._detach_image()
             self._image = None
             return
+
         if self._image:
             pos = self._image.pos
-            self.remove_widget(self._image)
+            self._detach_image()
             self._image.size_hint = (None, None)
             self._image.pos = pos
             self.animation_layer.add_widget(self._image)
@@ -130,13 +140,16 @@ class ImageGallery(ColorBoxLayout):
         else:
             self._image = StandardImage(source=value, allow_stretch=True,
                                         keep_ratio=True, anim_delay=0.08)
+
         if not self.visible:
             self.add_widget(self._image)
             self.visible = True
             return
+
         self._image.size_hint = (None, None)
         self._image.size = self.size
         self._image.pos = (self.pos[0] - self._anim_distance_x,
                            self.pos[1] - self._anim_distance_y)
         self.animation_layer.add_widget(self._image)
         self.entry_animation.start(self._image)
+        self.clear_widgets()
