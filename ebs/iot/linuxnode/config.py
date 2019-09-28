@@ -9,6 +9,9 @@
 
 
 import os
+import atexit
+import shutil
+import tempfile
 from six.moves.configparser import ConfigParser
 from appdirs import user_config_dir
 
@@ -23,6 +26,7 @@ class IoTNodeConfig(object):
         self._sys_config = ConfigParser()
         self._sys_config.read(self._sys_config_file)
         self._config_apply_init()
+        self._temp_dir = None
 
     def _config_apply_init(self):
         self._apply_display_layer()
@@ -30,6 +34,13 @@ class IoTNodeConfig(object):
     def _write_config(self):
         with open(self._config_file, 'w') as configfile:
             self._config.write(configfile)
+
+    @property
+    def temp_dir(self):
+        if not self._temp_dir:
+            self._temp_dir = tempfile.mkdtemp()
+            atexit.register(shutil.rmtree, self._temp_dir)
+        return self._temp_dir
 
     # Platform
     @property
