@@ -6,6 +6,8 @@ from twisted.internet.defer import Deferred
 
 from .widgets.image import StandardImage
 from .widgets.colors import ColorBoxLayout
+from .widgets.pdfplayer import PDFPlayer
+
 from .log import NodeLoggingMixin
 from .background import OverlayWindowGuiMixin
 from .externalplayer import ExternalMediaPlayer
@@ -33,7 +35,7 @@ class MediaPlayerMixin(NodeLoggingMixin):
         self._end_call = None
         self._mediaplayer_collision_count = 0
 
-    def media_play(self, content, duration=None, loop=False):
+    def media_play(self, content, duration=None, loop=False, interval=None):
         # Play the media file at filepath. If loop is true, restart the media
         # when it's done. You probably would want to provide a duration with
         # an image or with a looping video, not otherwise.
@@ -58,6 +60,10 @@ class MediaPlayerMixin(NodeLoggingMixin):
             self.log.debug("Showing image {filename}",
                            filename=os.path.basename(content))
             self._media_play_image(content)
+        elif os.path.splitext(content)[1] in ['.pdf']:
+            self.log.debug("Showing pdf {filename}",
+                           filename=os.path.basename(content))
+            self._media_play_pdf(content, interval=interval)
         else:
             self.log.debug("Starting video {filename}",
                            filename=os.path.basename(content))
@@ -66,6 +72,9 @@ class MediaPlayerMixin(NodeLoggingMixin):
         return self._media_player_deferred
 
     def _media_play_image(self, filepath):
+        raise NotImplementedError
+
+    def _media_play_pdf(self, filepath, interval=None):
         raise NotImplementedError
 
     def _media_play_video(self, filepath, loop=False):
@@ -109,6 +118,13 @@ class MediaPlayerGuiMixin(OverlayWindowGuiMixin):
         self._media_playing = StandardImage(source=filepath,
                                             allow_stretch=True,
                                             keep_ratio=True)
+        self.gui_mediaview.add_widget(self._media_playing)
+
+    def _media_play_pdf(self, filepath, interval=None):
+        self._media_playing = PDFPlayer(source=filepath,
+                                        temp_dir=self.config.temp_dir)
+        if interval:
+            self._media_playing.interval = interval
         self.gui_mediaview.add_widget(self._media_playing)
 
     def _media_play_video(self, *args, **kwargs):
@@ -155,6 +171,8 @@ class MediaPlayerGuiMixin(OverlayWindowGuiMixin):
             self._media_playing = None
         elif isinstance(self._media_playing, StandardImage):
             pass
+        elif isinstance(self._media_playing, PDFPlayer):
+            self._media_playing.stop()
         self.gui_mediaview.clear_widgets()
         MediaPlayerMixin.media_stop(self, forced=forced)
 
