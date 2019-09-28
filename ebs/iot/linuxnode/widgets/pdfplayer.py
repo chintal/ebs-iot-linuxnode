@@ -44,13 +44,15 @@ def generate_pdf_images(source, target, callback):
 class PDFPlayer(FloatLayout):
     source = StringProperty()
     loop = BooleanProperty(True)
-    interval = NumericProperty(5)
+    interval = NumericProperty(10)
 
-    def __init__(self, source, loop=True, temp_dir=None, **kwargs):
+    def __init__(self, source, loop=True, temp_dir=None,
+                 exit_retrace=False, **kwargs):
         super(PDFPlayer, self).__init__(**kwargs)
 
         self._gallery = ImageGallery(parent_layout=self,
-                                     animation_vector=(-1, 0))
+                                     animation_vector=(-1, 0),
+                                     exit_retrace=exit_retrace)
         self._gallery.transition = 'in_out_expo'
 
         self._current_page = -1
@@ -68,6 +70,10 @@ class PDFPlayer(FloatLayout):
 
         self.loop = loop
         self.source = source
+
+    @property
+    def num_pages(self):
+        return len(self._pages)
 
     @property
     def pages_dir(self):
@@ -114,7 +120,10 @@ class PDFPlayer(FloatLayout):
             return 0
 
     def step(self, *_):
+        last_page = self._current_page
         self._current_page = self._next_page()
+        if last_page == self._current_page:
+            return
         self._gallery.current = self._pages[self._current_page]
 
     def start(self):
@@ -122,3 +131,4 @@ class PDFPlayer(FloatLayout):
         if not self._pages:
             return
         self._task = Clock.schedule_interval(self.step, self.interval)
+        self.step()

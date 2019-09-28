@@ -19,6 +19,7 @@ from .basemixin import BaseMixin
 from .basemixin import BaseGuiMixin
 from .resources import ASSET
 from .widgets.gallery import ImageGallery
+from .widgets.pdfplayer import PDFPlayer
 
 WEBRESOURCE = 1
 
@@ -202,13 +203,22 @@ class BaseGalleryManager(object):
             self._widget.current = None
             return 30
         target = self._items[self.current_seq]
+        duration = target.duration
         if target.rtype == WEBRESOURCE:
             fp = self._node.resource_manager.get(target.resource).filepath
+
             if not os.path.exists(fp):
                 self._widget.current = None
                 return 10
+
+            if os.path.splitext(fp)[1] == '.pdf':
+                fp = PDFPlayer(source=fp, exit_retrace=True,
+                               temp_dir=self._node.config.temp_dir)
+                if not target.duration:
+                    duration = fp.num_pages * fp.interval
+
             self._widget.current = fp
-        return target.duration
+        return duration
 
     def stop(self):
         if self._task:

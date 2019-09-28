@@ -10,7 +10,6 @@ from .colors import BackgroundColorMixin
 from kivy.graphics.opengl import glGetIntegerv
 from kivy.graphics.opengl import GL_MAX_TEXTURE_SIZE
 _image_max_size = glGetIntegerv(GL_MAX_TEXTURE_SIZE)[0]
-# _image_max_size = 2000
 
 
 class SizeProofImage(Image):

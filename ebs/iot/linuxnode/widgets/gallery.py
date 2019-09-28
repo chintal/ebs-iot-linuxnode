@@ -2,7 +2,7 @@
 
 import math
 
-from kivy.uix.image import Image
+from kivy.uix.widget import Widget
 from kivy.uix.relativelayout import RelativeLayout
 
 from kivy.properties import BooleanProperty
@@ -17,9 +17,11 @@ class ImageGallery(ColorBoxLayout):
     visible = BooleanProperty(False)
     transition = StringProperty('in_out_elastic')
 
-    def __init__(self, **kwargs):
-        self.parent_layout = kwargs.pop('parent_layout')
-        self._animation_vector = kwargs.pop('animation_vector', (0, 1))
+    def __init__(self, parent_layout=None, animation_vector=(0, 1),
+                 exit_retrace=False, **kwargs):
+        self.parent_layout = parent_layout
+        self._animation_vector = animation_vector
+        self._exit_retrace = exit_retrace
 
         self._animation_layer = None
         self._exit_animation = None
@@ -86,8 +88,13 @@ class ImageGallery(ColorBoxLayout):
                 if not self._animation_layer:
                     return
                 self.animation_layer.remove_widget(instance)
-            self._exit_animation = Animation(y=self.pos[1] + self._anim_distance_y,
-                                             x=self.pos[0] + self._anim_distance_x,
+
+            if self._exit_retrace:
+                sgn = -1
+            else:
+                sgn = 1
+            self._exit_animation = Animation(y=self.pos[1] + sgn * self._anim_distance_y,
+                                             x=self.pos[0] + sgn * self._anim_distance_x,
                                              t=self.transition, duration=2)
             self._exit_animation.bind(on_complete=_when_done)
         return self._exit_animation
@@ -135,7 +142,7 @@ class ImageGallery(ColorBoxLayout):
             self.animation_layer.add_widget(self._image)
             self.exit_animation.start(self._image)
 
-        if isinstance(value, Image):
+        if isinstance(value, Widget):
             self._image = value
         else:
             self._image = StandardImage(source=value, allow_stretch=True,
