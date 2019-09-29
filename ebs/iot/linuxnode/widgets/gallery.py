@@ -88,6 +88,8 @@ class ImageGallery(ColorBoxLayout):
                 if not self._animation_layer:
                     return
                 self.animation_layer.remove_widget(instance)
+                if hasattr(instance, 'stop'):
+                    instance.stop()
 
             if self._exit_retrace:
                 sgn = -1

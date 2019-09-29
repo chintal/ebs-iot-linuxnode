@@ -472,7 +472,7 @@ class WebResourceEventManager(EventManager):
 
     def _preprocess_pdf(self, filepath):
         name = os.path.splitext(os.path.basename(filepath))[0]
-        target = os.path.join(self._node.config.temp_dir, name)
+        target = os.path.join(self._node.temp_dir, name)
         return deferToThread(generate_pdf_images, filepath, target, None)
 
     def _preprocess_resource(self, maybe_failure, resource):

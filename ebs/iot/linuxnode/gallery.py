@@ -213,7 +213,7 @@ class BaseGalleryManager(object):
 
             if os.path.splitext(fp)[1] == '.pdf':
                 fp = PDFPlayer(source=fp, exit_retrace=True,
-                               temp_dir=self._node.config.temp_dir)
+                               temp_dir=self._node.temp_dir)
                 if not target.duration:
                     duration = fp.num_pages * fp.interval
 

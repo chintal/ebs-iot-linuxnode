@@ -1,6 +1,9 @@
 
 
 import os
+import atexit
+import shutil
+import tempfile
 from appdirs import user_cache_dir
 from twisted.internet import reactor
 from .structure import BaseGuiStructureMixin
@@ -13,6 +16,7 @@ class BaseMixin(object):
         self._reactor = kwargs.pop('reactor', reactor)
         self._cache_dir = None
         self._db_dir = None
+        self._temp_dir = None
         super(BaseMixin, self).__init__(*args, **kwargs)
 
     def start(self):
@@ -48,6 +52,13 @@ class BaseMixin(object):
             self._db_dir = os.path.join(self.cache_dir, 'db')
             os.makedirs(self._db_dir, exist_ok=True)
         return self._db_dir
+
+    @property
+    def temp_dir(self):
+        if not self._temp_dir:
+            self._temp_dir = tempfile.mkdtemp()
+            atexit.register(shutil.rmtree, self._temp_dir)
+        return self._temp_dir
 
 
 class BaseGuiMixin(BaseGuiStructureMixin):

@@ -122,7 +122,7 @@ class MediaPlayerGuiMixin(OverlayWindowGuiMixin):
 
     def _media_play_pdf(self, filepath, interval=None):
         self._media_playing = PDFPlayer(source=filepath,
-                                        temp_dir=self.config.temp_dir)
+                                        temp_dir=self.temp_dir)
         if interval:
             self._media_playing.interval = interval
         self.gui_mediaview.add_widget(self._media_playing)
