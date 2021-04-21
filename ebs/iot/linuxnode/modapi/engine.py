@@ -158,6 +158,10 @@ class ModularHttpApiEngine(ModularApiEngineBase):
     def network_info(self):
         return self._actual.network_info
 
+    @property
+    def config(self):
+        return self._actual.config
+
     """ API Engine Management """
     def api_engine_activate(self):
         # Probe for internet
@@ -247,6 +251,9 @@ class ModularHttpApiEngine(ModularApiEngineBase):
 
     @property
     def api_url(self):
+        if self._api_baseurl.startswith('config'):
+            cft = self._api_baseurl.split(':')[1]
+            return getattr(self.config, cft)
         return self._api_baseurl
 
     def start(self):

@@ -14,13 +14,16 @@ from appdirs import user_config_dir
 
 
 class IoTNodeConfig(object):
-    _config_file = os.path.join(user_config_dir('iotnode'), 'config.ini')
+    _appname = 'iotnode'
+    _config_file = os.path.join(user_config_dir(_appname), 'config.ini')
     _sys_config_file = os.path.join('/etc/raspap/custom.ini')
 
     def __init__(self):
         self._config = ConfigParser()
+        print("Reading Config File {}".format(self._config_file))
         self._config.read(self._config_file)
         self._sys_config = ConfigParser()
+        print("Reading System Config File {}".format(self._sys_config_file))
         self._sys_config.read(self._sys_config_file)
         self._config_apply_init()
 

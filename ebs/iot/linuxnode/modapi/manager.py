@@ -4,20 +4,23 @@ from ..log import NodeLoggingMixin
 from ..http import HttpClientMixin
 
 
-class ModularApiEngineManagerMixin(NodeLoggingMixin, HttpClientMixin):
+class ModularApiEngineManagerMixin(HttpClientMixin, NodeLoggingMixin):
     def __init__(self, *args, **kwargs):
-        super(ModularApiEngineManagerMixin, self).__init__(*args, **kwargs)
         self._api_engines = []
+        super(ModularApiEngineManagerMixin, self).__init__(*args, **kwargs)
 
     def modapi_install(self, engine):
+        self.log.info("Installing Modular API Engine {0}".format(engine))
         self._api_engines.append(engine)
 
     def modapi_activate(self):
         for engine in self._api_engines:
+            self.log.info("Starting Modular API Engine {0}".format(engine))
             engine.start()
 
     def modapi_stop(self):
         for engine in self._api_engines:
+            self.log.info("Stopping Modular API Engine {0}".format(engine))
             engine.stop()
 
     def start(self):
