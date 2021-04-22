@@ -14,22 +14,39 @@ from .externalplayer import ExternalMediaPlayer
 
 
 class BackgroundGuiMixin(ConfigMixin, BaseGuiMixin):
+    _bg_structured_prefix = 'structured:'
+    _bg_separator = ':'
+
     def __init__(self, *args, **kwargs):
         self._bg_image = None
         self._bg_video = None
+        self._bg_structured = None
         self._bg = None
         self._gui_background_color = kwargs.pop('background_color', None)
         self._bg_container = None
         self._bg_current = None
         super(BackgroundGuiMixin, self).__init__(*args, **kwargs)
 
+    def bg_is_structured(self, value):
+        return value.startswith(self._bg_structured_prefix)
+
+    def bg_is_file(self, value):
+        return not value.startswith(self._bg_structured_prefix)
+
     def background_set(self, fpath):
-        if not fpath or not os.path.exists(fpath):
+        if not fpath:
             fpath = None
+
+        if self.bg_is_structured(fpath):
+            if not hasattr(self, fpath.split(self._bg_separator)[1]):
+                fpath = None
+        else:
+            if not os.path.exists(fpath):
+                fpath = None
 
         if self.config.background != fpath:
             old_bg = os.path.basename(urlparse(self.config.background).path)
-            if self.resource_manager.has(old_bg):
+            if self.bg_is_file(old_bg) and self.resource_manager.has(old_bg):
                 self.resource_manager.remove(old_bg)
             self.config.background = fpath
 
@@ -50,6 +67,22 @@ class BackgroundGuiMixin(ConfigMixin, BaseGuiMixin):
                                        pos=_child_geometry)
         return self._bg_container
 
+    def gui_bg_clear(self):
+        if self._bg_image:
+            self.gui_bg_container.remove_widget(self._bg_image)
+            self._bg_image = None
+        if self._bg_structured:
+            self.gui_bg_container.remove_widget(self._bg_structured)
+            self._bg_structured = None
+        if self._bg_video:
+            if isinstance(self._bg_video, Video):
+                self.gui_bg_container.remove_widget(self._bg_video)
+                self._bg_video.unload()
+            elif isinstance(self._bg_video, ExternalMediaPlayer):
+                self._bg_video.force_stop()
+            self._bg_video = None
+        self._bg = None
+
     @property
     def gui_bg_image(self):
         return self._bg_image
@@ -58,13 +91,9 @@ class BackgroundGuiMixin(ConfigMixin, BaseGuiMixin):
     def gui_bg_image(self, value):
         if not os.path.exists(value):
             return
-        if self._bg_image:
-            self.gui_bg_container.remove_widget(self._bg_image)
-            self._bg_image = None
-        if self._bg_video:
-            self.gui_bg_container.remove_widget(self._bg_video)
-            self._bg_video.unload()
-            self._bg_video = None
+
+        self.gui_bg_clear()
+
         self._bg_image = BleedImage(
             source=value, allow_stretch=True, keep_ratio=True,
             bgcolor=self._gui_background_color or 'auto'
@@ -107,21 +136,27 @@ class BackgroundGuiMixin(ConfigMixin, BaseGuiMixin):
         if not os.path.exists(value):
             return
 
-        if self._bg_image:
-            self.gui_bg_container.remove_widget(self._bg_image)
-            self._bg_image = None
-        if self._bg_video:
-            if isinstance(self._bg_video, Video):
-                self.gui_bg_container.remove_widget(self._bg_video)
-                self._bg_video.unload()
-            elif isinstance(self._bg_video, ExternalMediaPlayer):
-                self._bg_video.force_stop()
-            self._bg_video = None
+        self.gui_bg_clear()
 
         if self.config.background_external_player:
             self._gui_bg_video_external(value)
         else:
             self._gui_bg_video_native(value)
+
+    @property
+    def gui_bg_structured(self):
+        return self._bg_structured
+
+    @gui_bg_structured.setter
+    def gui_bg_structured(self, value):
+        if not hasattr(self, value):
+            return
+
+        self._bg_structured = getattr(self, value)
+        self._bg = self._bg_structured
+        self.gui_bg_container.add_widget(self._bg_structured)
+
+        self.gui_bg_clear()
 
     @property
     def gui_bg(self):
@@ -130,17 +165,20 @@ class BackgroundGuiMixin(ConfigMixin, BaseGuiMixin):
     @gui_bg.setter
     def gui_bg(self, value):
         self.log.info("Setting background to {value}", value=value)
-        if not os.path.exists(value):
+        if self.bg_is_file(value) and not os.path.exists(value):
             value = self.config.background
 
         if value == self._bg_current:
             return
 
-        _media_extentions_image = ['.png', '.jpg', '.bmp', '.gif', '.jpeg']
-        if os.path.splitext(value)[1] in _media_extentions_image:
-            self.gui_bg_image = value
+        if self.bg_is_file(value):
+            _media_extentions_image = ['.png', '.jpg', '.bmp', '.gif', '.jpeg']
+            if os.path.splitext(value)[1] in _media_extentions_image:
+                self.gui_bg_image = value
+            else:
+                self.gui_bg_video = value
         else:
-            self.gui_bg_video = value
+            self.gui_bg_structured = value.split(self._bg_separator)[1]
         self._bg_current = value
 
     def gui_bg_update(self):
