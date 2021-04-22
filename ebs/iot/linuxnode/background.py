@@ -2,6 +2,7 @@
 
 import os
 import subprocess
+
 from kivy.core.window import Window
 from kivy.uix.video import Video
 from kivy.uix.boxlayout import BoxLayout
@@ -22,7 +23,6 @@ class BackgroundGuiMixin(ConfigMixin, BaseGuiMixin):
         self._bg_video = None
         self._bg_structured = None
         self._bg = None
-        self._gui_background_color = kwargs.pop('background_color', None)
         self._bg_container = None
         self._bg_current = None
         super(BackgroundGuiMixin, self).__init__(*args, **kwargs)
@@ -95,8 +95,10 @@ class BackgroundGuiMixin(ConfigMixin, BaseGuiMixin):
         self.gui_bg_clear()
 
         self._bg_image = BleedImage(
-            source=value, allow_stretch=True, keep_ratio=True,
-            bgcolor=self._gui_background_color or 'auto'
+            source=value,
+            allow_stretch=True,
+            keep_ratio=True,
+            bgcolor='auto'
         )
         self._bg = self._bg_image
         self.gui_bg_container.add_widget(self._bg_image)
