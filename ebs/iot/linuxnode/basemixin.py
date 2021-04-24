@@ -7,7 +7,7 @@ import tempfile
 from appdirs import user_cache_dir
 from twisted.internet import reactor
 from .structure import BaseGuiStructureMixin
-from .colors import GuiPalette
+from .widgets.colors import GuiPalette
 
 
 class BaseMixin(object):

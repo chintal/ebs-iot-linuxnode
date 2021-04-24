@@ -5,7 +5,7 @@ import uuid
 
 from twisted.internet import task
 
-from .widgets.colors import ColorLabel
+from .widgets.labels import ColorLabel
 from .widgets.colors import color_set_alpha
 
 from .basemixin import BaseMixin

@@ -5,7 +5,7 @@ from twisted.internet.task import LoopingCall
 from twisted.internet.defer import succeed
 
 from .widgets.image import BleedImage
-from .widgets.colors import ColorLabel
+from .widgets.labels import ColorLabel
 from .basemixin import BaseGuiMixin
 from .log import NodeLoggingMixin
 from .http import HttpClientMixin

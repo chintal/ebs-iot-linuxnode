@@ -1,7 +1,6 @@
 
 
 from kivy.uix.boxlayout import BoxLayout
-from kivy.uix.label import Label
 
 from kivy.graphics import Color
 from kivy.graphics import Rectangle
@@ -15,6 +14,22 @@ def color_set_alpha(color, alpha):
     cl = list(color[:3])
     cl.append(alpha)
     return cl
+
+
+class GuiPalette(object):
+    def __init__(self, background, foreground, color_1, color_2):
+        self.background = background
+        self.foreground = foreground
+        self.color_1 = color_1
+        self.color_2 = color_2
+
+    def __repr__(self):
+        rv = "<{0}>".format(self.__class__.__name__)
+        rv += "\n - background : {}".format(self.background)
+        rv += "\n - foreground : {}".format(self.foreground)
+        rv += "\n - color_1 : {}".format(self.color_1)
+        rv += "\n - color_2 : {}".format(self.color_2)
+        return rv
 
 
 class Gradient(object):
@@ -54,13 +69,6 @@ class BackgroundColorMixin(object):
 
     def make_opaque(self):
         self.bgcolor = color_set_alpha(self.bgcolor, 1)
-
-
-class ColorLabel(BackgroundColorMixin, Label):
-    def __init__(self, **kwargs):
-        bgcolor = kwargs.pop('bgcolor')
-        Label.__init__(self, **kwargs)
-        BackgroundColorMixin.__init__(self, bgcolor=bgcolor)
 
 
 class ColorBoxLayout(BackgroundColorMixin, BoxLayout):

@@ -154,11 +154,12 @@ class BackgroundGuiMixin(ConfigMixin, BaseGuiMixin):
         if not hasattr(self, value):
             return
 
+        self.gui_bg_clear()
+
         self._bg_structured = getattr(self, value)
         self._bg = self._bg_structured
         self.gui_bg_container.add_widget(self._bg_structured)
 
-        self.gui_bg_clear()
 
     @property
     def gui_bg(self):
