@@ -12,6 +12,8 @@ from .widgets.colors import GuiPalette
 
 class BaseMixin(object):
     _appname = 'iotnode'
+    _app_root = os.path.abspath(os.path.dirname(__file__))
+    _app_resources = os.path.join(_app_root, 'resources')
 
     def __init__(self, *args, **kwargs):
         self._reactor = kwargs.pop('reactor', reactor)
@@ -19,6 +21,10 @@ class BaseMixin(object):
         self._db_dir = None
         self._temp_dir = None
         super(BaseMixin, self).__init__(*args, **kwargs)
+
+    @property
+    def app_resources(self):
+        return self._app_resources
 
     def start(self):
         pass
