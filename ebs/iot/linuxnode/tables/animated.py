@@ -53,10 +53,11 @@ class BasicAnimatedTable(BasicRenderableTable):
         return Animation(d=0.1 * idx + 0.8)
 
     def _detach_entry(self, entry_bin):
-        pos = entry_bin.pos
-        self._gui_table_entries.remove_widget(entry_bin)
-        entry_bin.pos = pos
-        self.animation_layer.add_widget(entry_bin)
+        if entry_bin.parent == self._gui_table_entries:
+            pos = entry_bin.pos
+            self._gui_table_entries.remove_widget(entry_bin)
+            entry_bin.pos = pos
+            self.animation_layer.add_widget(entry_bin)
 
     def _detach_entries(self, entries):
         for tags, entry_bin in entries.items():

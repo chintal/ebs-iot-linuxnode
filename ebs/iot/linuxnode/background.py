@@ -72,6 +72,8 @@ class BackgroundGuiMixin(ConfigMixin, BaseGuiMixin):
             self.gui_bg_container.remove_widget(self._bg_image)
             self._bg_image = None
         if self._bg_structured:
+            if hasattr(self._bg_structured, 'stop'):
+                self._bg_structured.stop()
             self.gui_bg_container.remove_widget(self._bg_structured)
             self._bg_structured = None
         if self._bg_video:

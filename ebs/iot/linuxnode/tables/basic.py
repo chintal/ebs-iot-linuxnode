@@ -1,4 +1,5 @@
 
+import pprint
 from math import floor
 from math import ceil
 
@@ -41,7 +42,7 @@ class BasicTable(object):
                 dedup_record.append(tags)
             entry.parent = self
             self._entries.append(entry)
-        print(self._entries)
+        pprint.PrettyPrinter().pprint(self._entries)
 
 
 class BasicRenderableTable(BasicTable):

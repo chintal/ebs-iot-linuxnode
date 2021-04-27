@@ -22,7 +22,8 @@ class CompositeAnimationManager(object):
             animation.start(widget)
 
     def cancel(self):
-        pass
+        for anim, widget in self._animations:
+            anim.cancel_all(widget)
 
     def clear(self):
         self.cancel()
