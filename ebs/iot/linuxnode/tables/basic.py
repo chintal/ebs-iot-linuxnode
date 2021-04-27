@@ -1,5 +1,5 @@
 
-import pprint
+
 from math import floor
 from math import ceil
 
@@ -42,7 +42,8 @@ class BasicTable(object):
                 dedup_record.append(tags)
             entry.parent = self
             self._entries.append(entry)
-        pprint.PrettyPrinter().pprint(self._entries)
+        self._node.log.info("Extracted {0} Entries from API response"
+                            "".format(len(self._entries)))
 
 
 class BasicRenderableTable(BasicTable):
