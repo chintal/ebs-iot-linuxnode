@@ -88,7 +88,7 @@ class BasicColumnSpec(object):
 class BasicTableSpec(object):
     def __init__(self, column_specs, show_column_header, dedup_keys=False,
                  row_height=90, row_spacing=10, font_size='42sp',
-                 font_bold=False):
+                 font_bold=False, font_name=None):
         self._column_specs = column_specs
         for colspec in self._column_specs:
             colspec.parent = self
@@ -98,6 +98,11 @@ class BasicTableSpec(object):
         self._font_size = font_size
         self._font_bold = font_bold
         self._dedup_keys = dedup_keys
+        self._font_name = font_name
+
+    @property
+    def font_name(self):
+        return self._font_name
 
     @property
     def font_size(self):

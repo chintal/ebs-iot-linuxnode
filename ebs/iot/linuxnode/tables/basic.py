@@ -91,6 +91,7 @@ class BasicRenderableTable(BasicTable):
                 size_hint=(colspec.width_hint, None),
                 height=self.spec.row_height,
                 font_size=self.spec.font_size,
+                font_name=self.spec.font_name,
                 valign='middle', halign='center',
                 padding_x=15, width=colspec.width,
                 bold=colspec.font_bold,

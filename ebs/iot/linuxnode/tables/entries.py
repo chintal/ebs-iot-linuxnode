@@ -48,6 +48,7 @@ class BasicRenderableTableEntry(BasicTableEntry):
                 color=palette.cell_foreground,
                 size_hint=(colspec.width_hint, None),
                 height=self.parent.spec.row_height,
+                font_name=self.parent.spec.font_name,
                 font_size=self.parent.spec.font_size,
                 valign='middle', halign=colspec.halign,
                 padding_x=15, width=colspec.width,
