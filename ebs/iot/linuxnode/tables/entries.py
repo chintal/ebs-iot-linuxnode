@@ -30,6 +30,9 @@ class BasicRenderableTableEntry(BasicTableEntry):
         super(BasicRenderableTableEntry, self).__init__(data)
 
     def build(self, palette=None):
+        if self._gui_entry:
+            return self._gui_entry
+
         if not palette:
             palette = self.parent.palette
 

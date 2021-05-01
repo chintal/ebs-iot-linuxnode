@@ -1,5 +1,7 @@
 
 
+import gc
+import memory_profiler
 from collections import OrderedDict
 from .basic import BasicRenderableTable
 
@@ -12,8 +14,8 @@ from ebs.iot.linuxnode.animations.composite import CompositeAnimationManager
 class BasicAnimatedTable(BasicRenderableTable):
     def __init__(self, node, spec):
         self._current_entries = OrderedDict()
-        self._animation_layer = None
         self._animations = CompositeAnimationManager()
+        self._animation_layer = None
         self._animation_lock = False
         super(BasicAnimatedTable, self).__init__(node, spec)
 
@@ -142,7 +144,6 @@ class BasicAnimatedTable(BasicRenderableTable):
     def redraw_entries(self, entries):
         if self._animation_lock:
             self._node.log.warn("Animation lock is active! Force breaking.")
-            self._animations.cancel()
 
         self._node.log.debug("Redrawing Table, Got {0} Entries".format(len(entries)))
         self._alternate_fallback_handler(None, entries)
@@ -161,8 +162,9 @@ class BasicAnimatedTable(BasicRenderableTable):
 
         for idx, (tags, entry_bin) in enumerate(new_entries.items()):
             if tags in deferred_tags.keys():
-                oidx, entry_bin = deferred_tags[tags]
-                self._animations.add(self._transfer_animation(idx), entry_bin)
+                oidx, oentry_bin = deferred_tags[tags]
+                new_entries[tags] = oentry_bin
+                self._animations.add(self._transfer_animation(idx), oentry_bin)
                 continue
             self._preposition_entry(idx, entry_bin)
             animation = self._delay_entry(idx) + self._entry_animation(idx)
@@ -170,10 +172,12 @@ class BasicAnimatedTable(BasicRenderableTable):
 
         def _finish():
             self._animation_lock = False
-            self._attach_entries(new_entries)
+            self._attach_entries(self._current_entries)
             self._destroy_dangling_entities()
+            gc.collect()
 
         self._animations.when_done(_finish)
         self._animation_lock = True
         self._animations.start()
         self._current_entries = new_entries
+        new_entries = None

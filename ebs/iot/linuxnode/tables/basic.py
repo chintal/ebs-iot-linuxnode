@@ -214,7 +214,7 @@ class BasicRenderableTable(BasicTable):
     def redraw_entries(self, entries):
         self._node.log.debug("Redrawing Table, Got {0} Entries".format(len(entries)))
         if hasattr(self, '_alternate_fallback_handler'):
-            getattr(self, '_alternate_fallback_handler')(None, entries)
+            self._alternate_fallback_handler(None, entries)
         self._gui_table_entries.clear_widgets()
         for entry in entries:
             self._gui_table_entries.add_widget(entry.build(self.palette))

@@ -10,7 +10,7 @@ class CompositeAnimationManager(object):
 
     def _anim_done_handler(self, anim, widget):
         self._animations.remove((anim, widget))
-        if not self._animations:
+        if len(self._animations) == 0:
             self._finish_handler()
 
     def when_done(self, handler):
