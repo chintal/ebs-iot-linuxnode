@@ -17,3 +17,7 @@ def take_snapshot():
             if delta[t]:
                 print("{0:20} {1}".format(t, delta[t]))
     previous_snapshot = snapshot
+
+
+def show_chain(ob):
+    objgraph.show_chain(objgraph.find_backref_chain(ob, objgraph.is_proper_module))

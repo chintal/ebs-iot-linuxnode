@@ -1,7 +1,6 @@
 
 
 import gc
-import memory_profiler
 from collections import OrderedDict
 from .basic import BasicRenderableTable
 
@@ -137,7 +136,6 @@ class BasicAnimatedTable(BasicRenderableTable):
             entry_bin = entry.build(self.palette)
             entry_bin.size_hint = (None, None)
             entry_bin.size = self._entry_size()
-            self._gui_table_entries.bind(width=entry_bin.setter('width'))
             rv[tags] = entry_bin
         return rv
 
