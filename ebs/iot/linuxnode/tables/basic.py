@@ -126,8 +126,14 @@ class BasicRenderableTable(BasicTable):
         return ceil(len(self.active_entries) / self.entries_per_page)
 
     def page_entities(self, page):
-        s = page * self.entries_per_page
-        e = s + self.entries_per_page
+        e_tot = len(self.active_entries)
+        p_tot = ceil(e_tot / self.entries_per_page)
+        if page == p_tot - 1:
+            s = max(0, e_tot - self.entries_per_page)
+            e = e_tot
+        else:
+            s = page * self.entries_per_page
+            e = s + self.entries_per_page
         return self.active_entries[s:e]
 
     def _build_title(self):

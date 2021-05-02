@@ -162,7 +162,8 @@ class BasicAnimatedTable(BasicRenderableTable):
             if tags in deferred_tags.keys():
                 oidx, oentry_bin = deferred_tags[tags]
                 new_entries[tags] = oentry_bin
-                self._animations.add(self._transfer_animation(idx), oentry_bin)
+                animation = self._delay_entry(idx) + self._transfer_animation(idx)
+                self._animations.add(animation, oentry_bin)
                 continue
             self._preposition_entry(idx, entry_bin)
             animation = self._delay_entry(idx) + self._entry_animation(idx)
