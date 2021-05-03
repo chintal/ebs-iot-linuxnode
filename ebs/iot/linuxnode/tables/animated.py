@@ -87,6 +87,10 @@ class BasicAnimatedTable(BasicRenderableTable):
         entry_bin.pos = x - dx, y - dy
         self.animation_layer.add_widget(entry_bin)
 
+    def _position_entry(self, idx, entry_bin):
+        entry_bin.pos = self._entry_pos(idx)
+        self.animation_layer.add_widget(entry_bin)
+
     def _entry_animation(self, idx):
         px, py = self._entry_pos(idx)
         animation = Animation(x=px, y=py, t='out_cubic', duration=1.)
@@ -161,9 +165,13 @@ class BasicAnimatedTable(BasicRenderableTable):
         for idx, (tags, entry_bin) in enumerate(new_entries.items()):
             if tags in deferred_tags.keys():
                 oidx, oentry_bin = deferred_tags[tags]
-                new_entries[tags] = oentry_bin
-                animation = self._delay_entry(idx) + self._transfer_animation(idx)
-                self._animations.add(animation, oentry_bin)
+                self.animation_layer.remove_widget(oentry_bin)
+                self._position_entry(oidx, entry_bin)
+                if oidx < idx:
+                    animation = self._delay_entry(idx) + self._transfer_animation(idx)
+                else:
+                    animation = self._transfer_animation(idx)
+                self._animations.add(animation, entry_bin)
                 continue
             self._preposition_entry(idx, entry_bin)
             animation = self._delay_entry(idx) + self._entry_animation(idx)
