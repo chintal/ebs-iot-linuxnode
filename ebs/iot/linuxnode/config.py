@@ -34,6 +34,11 @@ class IoTNodeConfig(object):
         with open(self._config_file, 'w') as configfile:
             self._config.write(configfile)
 
+    def _check_section(self, section):
+        if not self._config.has_section(section):
+            self._config.add_section(section)
+            self._write_config()
+
     # Platform
     @property
     def platform(self):
@@ -83,6 +88,7 @@ class IoTNodeConfig(object):
 
     @background.setter
     def background(self, value):
+        self._check_section('display')
         self._config.set('display', 'background', value)
         self._write_config()
 
@@ -222,6 +228,7 @@ class IoTNodeConfig(object):
 
     @browser_show_default.setter
     def browser_show_default(self, value):
+        self._check_section('browser')
         if value:
             value = 'yes'
         else:
@@ -235,6 +242,7 @@ class IoTNodeConfig(object):
 
     @browser_default_url.setter
     def browser_default_url(self, value):
+        self._check_section('browser')
         self._config.set('browser', 'default_url', value)
         self._write_config()
 
@@ -243,23 +251,6 @@ class IoTNodeConfig(object):
     def text_font_name(self):
         font_name = self._config.get('text', 'font_name', fallback=None)
         return font_name
-
-    # API
-    @property
-    def api_url(self):
-        return self._config.get('api', 'url', fallback=None)
-
-    @property
-    def api_token(self):
-        return self._config.get('api', 'token', fallback=None)
-
-    @api_token.setter
-    def api_token(self, value):
-        if not value:
-            self._config.remove_option('api', 'token')
-        else:
-            self._config.set('api', 'token', value)
-        self._write_config()
 
 
 class ConfigMixin(object):
