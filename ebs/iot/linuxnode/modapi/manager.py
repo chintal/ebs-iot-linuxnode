@@ -92,7 +92,7 @@ class ModularApiEngineManagerGuiMixin(ModularApiEngineManagerMixin, BaseGuiMixin
         if self._api_internet_link_indicator and self._api_internet_link_indicator.parent:
             self.gui_notification_stack.remove_widget(self._api_internet_link_indicator)
             self.gui_notification_update()
-        self._internet_link_indicator = None
+        self._api_internet_link_indicator = None
 
     @property
     def modapi_internet_indicator(self):
@@ -147,8 +147,7 @@ class ModularApiEngineManagerGuiMixin(ModularApiEngineManagerMixin, BaseGuiMixin
             self.gui_notification_update()
 
     def modapi_signal_internet_link(self, value, prefix):
-        if not self._api_internet_link:
-            self._api_internet_link = value
+        self._api_internet_link = value
         self._modapi_internet_link_indicator_show()
 
     def modapi_signal_internet_connected(self, value, prefix):
