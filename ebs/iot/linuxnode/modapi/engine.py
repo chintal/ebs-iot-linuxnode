@@ -1,5 +1,6 @@
 
 import os
+from twisted import logger
 from twisted.internet.defer import succeed
 from twisted.internet.task import LoopingCall
 
@@ -14,6 +15,7 @@ class ModularApiEngineBase(object):
     _api_reconnect_frequency = 30
 
     def __init__(self, actual):
+        self._log = None
         self._actual = actual
         self._api_reconnect_task = None
         self._api_engine_active = False
@@ -32,7 +34,9 @@ class ModularApiEngineBase(object):
 
     @property
     def log(self):
-        return self._actual.log
+        if not self._log:
+            self._log = logger.Logger(namespace="modapi.{0}".format(self._prefix), source=self)
+        return self._log
 
     """ API Connection Status Primitives """
     @property

@@ -63,10 +63,10 @@ class BasicAnimatedTable(BasicRenderableTable):
     def _detach_entries(self, entries):
         for tags, entry_bin in entries.items():
             self._detach_entry(entry_bin)
-        self._node.log.debug("Detached {0} Entries, Remaining T={1},A={2} Entries"
-                             "".format(len(entries),
-                                       len(self._gui_table_entries.children),
-                                       len(self.animation_layer.children)))
+        self.log.debug("Detached {0} Entries, Remaining T={1},A={2} Entries"
+                       "".format(len(entries),
+                                 len(self._gui_table_entries.children),
+                                 len(self.animation_layer.children)))
 
     def _exit_animation(self, idx):
         x, y = self._entry_pos(idx)
@@ -112,10 +112,10 @@ class BasicAnimatedTable(BasicRenderableTable):
     def _attach_entries(self, entries):
         for tags, entry_bin in entries.items():
             self._attach_entry(entry_bin)
-        self._node.log.debug("Attached {0} Entries, Remaining T={1},A={2} Entries"
-                             "".format(len(entries),
-                                       len(self._gui_table_entries.children),
-                                       len(self.animation_layer.children)))
+        self.log.debug("Attached {0} Entries, Remaining T={1},A={2} Entries"
+                       "".format(len(entries),
+                                 len(self._gui_table_entries.children),
+                                 len(self.animation_layer.children)))
 
     def _entries_change_handler(self, _, value):
         pass
@@ -145,9 +145,9 @@ class BasicAnimatedTable(BasicRenderableTable):
 
     def redraw_entries(self, entries):
         if self._animation_lock:
-            self._node.log.warn("Animation lock is active! Force breaking.")
+            self.log.warn("Animation lock is active! Force breaking.")
 
-        self._node.log.debug("Redrawing Table, Got {0} Entries".format(len(entries)))
+        self.log.debug("Redrawing Table, Got {0} Entries".format(len(entries)))
         self._alternate_fallback_handler(None, entries)
         self._detach_entries(self._current_entries)
         new_entries = self._build_entries(entries)

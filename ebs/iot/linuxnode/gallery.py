@@ -2,6 +2,7 @@
 
 import os
 from six.moves.urllib.parse import urlparse
+from twisted import logger
 from twisted.internet.task import deferLater
 from twisted.internet.defer import CancelledError
 
@@ -132,6 +133,7 @@ class GalleryResource(object):
 class BaseGalleryManager(object):
     def __init__(self, node, gmid, widget, default_duration=4):
         self._gmid = gmid
+        self._log = None
         self._node = node
         self._widget = widget
         self._default_duration = default_duration
@@ -140,11 +142,18 @@ class BaseGalleryManager(object):
         self._items = []
 
     @property
+    def log(self):
+        if not self._log:
+            self._log = logger.Logger(namespace="gallery.{0}".format(self._gmid),
+                                      source=self)
+        return self._log
+
+    @property
     def default_duration(self):
         return self._default_duration
 
     def flush(self, force=False):
-        self._node.log.debug("Flushing gallery resources")
+        self.log.debug("Flushing gallery resources")
         self._items = []
         if force:
             self._trigger_transition()
@@ -153,7 +162,7 @@ class BaseGalleryManager(object):
         return items
 
     def load(self, items):
-        self._node.log.debug("Loading gallery resource list")
+        self.log.debug("Loading gallery resource list")
         self.flush()
         self._items = self._load(items)
 
@@ -178,7 +187,7 @@ class BaseGalleryManager(object):
             return -1
 
     def start(self):
-        self._node.log.info("Starting Gallery Manager {gmid} of {name}",
+        self.log.info("Starting Gallery Manager {gmid} of {name}",
                             gmid=self._gmid, name=self.__class__.__name__)
         self.step()
 
@@ -328,7 +337,7 @@ class GalleryManager(BaseGalleryManager):
         return self._node.db_dir
 
     def _fetch(self):
-        self._node.log.info("Triggering Gallery Fetch")
+        self.log.info("Triggering Gallery Fetch")
         session = self.db()
         try:
             results = self.db_get_resources(session).all()

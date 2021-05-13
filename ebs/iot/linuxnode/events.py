@@ -8,6 +8,7 @@ from six.moves.urllib.parse import urlparse
 from twisted.internet.task import deferLater
 from twisted.internet.threads import deferToThread
 from twisted.internet.defer import DeferredSemaphore
+from twisted import logger
 
 from sqlalchemy import Column
 from sqlalchemy import Integer
@@ -202,11 +203,18 @@ class EventManager(object):
         self._current_event = None
         self._current_event_resource = None
         self._preprocess_semaphore = None
+        self._log = None
         _ = self.db
 
     @property
     def emid(self):
         return self._emid
+
+    @property
+    def log(self):
+        if not self._log:
+            self._log = logger.Logger(namespace="em.{0}".format(self.emid), source=self)
+        return self._log
 
     @property
     def preprocess_semaphore(self):
@@ -300,7 +308,7 @@ class EventManager(object):
         for result in results:
             if result.start_time >= datetime.now():
                 break
-            self._node.log.warn("Pruning missed event {event}", event=result)
+            self.log.warn("Pruning missed event {event}", event=result)
             self.remove(result.eid)
 
     def render(self):
@@ -361,11 +369,11 @@ class EventManager(object):
 
     def _finish_event(self, forced):
         if forced:
-            self._node.log.info("Event {eid} was force stopped.",
-                                eid=self._current_event)
+            self.log.info("Event {eid} was force stopped.",
+                          eid=self._current_event)
         else:
-            self._node.log.info("Successfully finished event {eid}",
-                                eid=self._current_event)
+            self.log.info("Successfully finished event {eid}",
+                          eid=self._current_event)
             self._succeed_event(self._current_event)
         self._current_event = None
         self._current_event_resource = None
@@ -379,8 +387,8 @@ class EventManager(object):
         le, ne = self.previous(follow=True)
         if le:
             ltd = datetime.now() - le.start_time
-            # self._node.log.debug("S {emid} LTD {ltd}",
-            #                      ltd=ltd, emid=self._emid)
+            # self.log.debug("S {emid} LTD {ltd}",
+            #                ltd=ltd, emid=self._emid)
             if abs(ltd) < timedelta(seconds=3):
                 event = le
                 nevent = ne
@@ -388,8 +396,8 @@ class EventManager(object):
             ne, nne = self.next(follow=True)
             if ne:
                 ntd = ne.start_time - datetime.now()
-                # self._node.log.debug("S {emid} NTD {ntd}",
-                #                      ntd=ntd, emid=self._emid)
+                # self.log.debug("S {emid} NTD {ntd}",
+                #                ntd=ntd, emid=self._emid)
                 if abs(ntd) < timedelta(seconds=3):
                     event = ne
                     nevent = nne
@@ -413,14 +421,14 @@ class EventManager(object):
                 next_start = timedelta(seconds=60)
             elif next_start > timedelta(seconds=60):
                 next_start = timedelta(seconds=60)
-        self._node.log.debug("SCHED {emid} HOP {ns}", emid=self._emid,
-                             ns=next_start.seconds)
+        self.log.debug("SCHED {emid} HOP {ns}", emid=self._emid,
+                       ns=next_start.seconds)
         return deferLater(self._node.reactor, next_start.seconds,
                           self._event_scheduler)
 
     def start(self):
-        self._node.log.info("Starting Event Manager {emid} of {name}",
-                            emid=self._emid, name=self.__class__.__name__)
+        self.log.info("Starting Event Manager {emid} of {name}",
+                      emid=self._emid, name=self.__class__.__name__)
         self._event_scheduler()
 
 
@@ -430,7 +438,7 @@ class TextEventManager(EventManager):
             d = self._node.marquee_play(text=event.resource,
                                         duration=event.duration)
             d.addCallback(self._finish_event)
-            self._node.log.info("Executed Event : {0}".format(event))
+            self.log.info("Executed Event : {0}".format(event))
             self._current_event = event.eid
             self._current_event_resource = event.resource
         except MarqueeBusy as e:
@@ -444,7 +452,7 @@ class TextEventManager(EventManager):
         try:
             self._node.api_text_success([event])
         except NotImplementedError:
-            self._node.log.debug("Node has no text event success reporter")
+            self.log.warn("Node has no text event success reporter")
 
 
 class WebResourceEventManager(EventManager):
@@ -455,16 +463,15 @@ class WebResourceEventManager(EventManager):
                 d = self._node.media_play(content=r,
                                           duration=event.duration)
                 d.addCallback(self._finish_event)
-                self._node.log.info("Executed Event : {0}".format(event))
+                self.log.info("Executed Event : {0}".format(event))
                 self._current_event = event.eid
                 self._current_event_resource = event.resource
             except MediaPlayerBusy as e:
-                # self._node.log.warn("Mediaplayer busy for {event} : {e}",
-                #                     event=event, e=e.now_playing)
+                # self.log.warn("Mediaplayer busy for {event} : {e}",
+                #               event=event, e=e.now_playing)
                 return e.collision_count
         else:
-            self._node.log.warn("Media not ready for {event}",
-                                event=event)
+            self.log.warn("Media not ready for {event}", event=event)
         self.remove(event.eid)
         self.prune()
 
@@ -472,7 +479,7 @@ class WebResourceEventManager(EventManager):
         try:
             self._node.api_media_success([event])
         except NotImplementedError:
-            self._node.log.debug("Node has no media event success reporter")
+            self.log.warn("Node has no media event success reporter")
 
     def _preprocess_pdf(self, filepath):
         name = os.path.splitext(os.path.basename(filepath))[0]
@@ -486,7 +493,7 @@ class WebResourceEventManager(EventManager):
             )
 
     def _fetch(self):
-        self._node.log.info("Triggering Fetch")
+        self.log.debug("Triggering WebResource Fetch")
         session = self.db()
         try:
             results = self.db_get_events(session).all()
@@ -509,7 +516,7 @@ class WebResourceEventManager(EventManager):
         self._fetch()
 
     def _prefetch(self):
-        self._node.log.info("Triggering Prefetch")
+        self.log.debug("Triggering WebResource Prefetch")
         session = self.db()
         try:
             results = self.db_get_events(session).all()

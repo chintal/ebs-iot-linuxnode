@@ -5,9 +5,12 @@ import time
 from datetime import datetime
 from datetime import timedelta
 from functools import partial
+
+from twisted import logger
 from twisted.internet.defer import succeed
 from twisted.internet.task import cooperate
 from twisted.web.client import ResponseFailed
+
 from sqlalchemy import Column
 from sqlalchemy import Integer
 from sqlalchemy import Text
@@ -144,6 +147,7 @@ class CacheableResource(object):
 class ResourceManager(object):
     def __init__(self, node, **kwargs):
         self._resource_class = kwargs.pop('resource_class', CacheableResource)
+        self._log = None
         self._node = node
         self._db = None
         self._db_engine = None
@@ -155,6 +159,12 @@ class ResourceManager(object):
     @property
     def node(self):
         return self._node
+
+    @property
+    def log(self):
+        if not self._log:
+            self._log = logger.Logger(namespace="rm", source=self)
+        return self._log
 
     def has(self, filename):
         # Check if a resource is in defined by the manager.
@@ -229,10 +239,8 @@ class ResourceManager(object):
 
     def _fetch(self, resource, semaphore=None):
         self._active_downloads.append(resource.filename)
-        self._node.log.debug("Requesting download of {filename}",
-                             filename=resource.filename)
-        d = self._node.http_download(resource.url, resource.cache_path,
-                                     semaphore=semaphore)
+        self.log.debug("Requesting download of {filename}", filename=resource.filename)
+        d = self._node.http_download(resource.url, resource.cache_path, semaphore=semaphore)
 
         # Update timestamps for the downloaded file to reflect start of
         # download instead of end. Consider if this is wise.
@@ -296,7 +304,7 @@ class CachingResourceManager(ResourceManager):
                 td = task.whenDone()
 
                 def _report_done(_):
-                    # self._node.log.debug("Cache trim complete.")
+                    # self.log.debug("Cache trim complete.")
                     pass
                 td.addCallback(_report_done)
             d.addCallback(fetch_postprocess)
@@ -306,8 +314,8 @@ class CachingResourceManager(ResourceManager):
 
     def cache_remove(self, filename):
         size = self.cache_file_size(filename)
-        # self._node.log.debug("Removing {filename} of size {size} from cache",
-        #                      filename=filename, size=size)
+        # self.log.debug("Removing {filename} of size {size} from cache",
+        #                filename=filename, size=size)
         try:
             os.remove(self.cache_path(filename))
         except FileNotFoundError:
@@ -317,8 +325,8 @@ class CachingResourceManager(ResourceManager):
     def cache_has(self, filename):
         r = os.path.exists(self.cache_path(filename))
         # if r:
-        #     self._node.log.debug("{filename} found in the cache",
-        #                          filename=filename)
+        #     self.log.debug("{filename} found in the cache",
+        #                    filename=filename)
         return r
 
     def cache_path(self, filename):
@@ -393,10 +401,10 @@ class CachingResourceManager(ResourceManager):
         else:
             trimmer = self._cache_trimmer_fifo
         current_size = self.cache_size
-        # self._node.log.debug("Attempting to trim cache to {max_size} from "
-        #                      "{current_size} with {trimmer}",
-        #                      max_size=max_size, current_size=current_size,
-        #                      trimmer=trimmer.__name__)
+        # self.log.debug("Attempting to trim cache to {max_size} from "
+        #                "{current_size} with {trimmer}",
+        #                max_size=max_size, current_size=current_size,
+        #                trimmer=trimmer.__name__)
         if current_size > max_size:
             r = list(self.cache_resources)
             resources = [(x, x.next_use) for x in r]
@@ -453,7 +461,7 @@ class CachingResourceManager(ResourceManager):
         r = [x for x in resources if not x[1]]
         # self._cache_debug(r, 'by no next_use', lambda x: x.next_use)
         if len(r):
-            # self.node.log.debug("NO NEXT USE")
+            # self.log.debug("NO NEXT USE")
             return self._cache_trimmer_fifo(r)
 
         # Next_use, next_use in the past
@@ -462,7 +470,7 @@ class CachingResourceManager(ResourceManager):
                    key=lambda x: x[1])
         # self._cache_debug(r, 'by next_use in past', lambda x: x.next_use)
         if len(r):
-            # self.node.log.debug('NEXT USE IN PAST')
+            # self.log.debug('NEXT USE IN PAST')
             return self._cache_cremove(resources, r[0])
 
         # Next_use, next_use in the future
@@ -471,21 +479,21 @@ class CachingResourceManager(ResourceManager):
                    key=lambda x: x[1], reverse=True)
         # self._cache_debug(r, 'by next_use in future', lambda x: x.next_use)
         if len(r):
-            # self.node.log.debug('NEXT USE IN FUTURE')
+            # self.log.debug('NEXT USE IN FUTURE')
             return self._cache_cremove(resources, r[0])
 
         raise NothingToTrimError()
 
     def _cache_debug(self, resources, title, keyfunc):
-        self._node.log.debug("------------------------------------")
-        self._node.log.debug("Cache Content {0}".format(title))
+        self.log.debug("------------------------------------")
+        self.log.debug("Cache Content {0}".format(title))
         for r, _ in resources:
             self._node.log.debug(
                 "{key} {filename}",
                 filename=r.filename,
                 key=keyfunc(r)
             )
-        self._node.log.debug("----------------------------------- ")
+        self.log.debug("----------------------------------- ")
 
 
 class ResourceManagerMixin(HttpClientMixin):

@@ -1,6 +1,7 @@
 
 
 import arrow
+from twisted import logger
 from twisted.internet.task import deferLater
 from twisted.internet.defer import CancelledError
 
@@ -48,6 +49,13 @@ class Timetable(BasicAnimatedTable):
                 row_height=90, row_spacing=10, font_size='42sp', font_bold=False)
         super(Timetable, self).__init__(node, spec)
 
+    @property
+    def log(self):
+        if not self._log:
+            self._log = logger.Logger(namespace="timetable.{0}".format(self._spec.name),
+                                      source=self)
+        return self._log
+
     def build(self, entries):
         # self._current_page = 0
         return super(Timetable, self).build(entries=entries)
@@ -58,12 +66,12 @@ class Timetable(BasicAnimatedTable):
                 if x.ts_start.shift(minutes=-1 * self._prior_window) < arrow.now() < x.ts_end.shift(minutes=self._post_window)]
 
     def start(self):
-        self._node.log.info("Starting Timetable Redraw Task for {0}".format(self))
+        self.log.info("Starting Timetable Redraw Task for {0}".format(self))
         self._current_page = 0
         self.step()
 
     def step(self):
-        self._node.log.debug("Drawing page {0} / {1}".format(self._current_page + 1, self.total_pages))
+        self.log.debug("Drawing page {0} / {1}".format(self._current_page + 1, self.total_pages))
         self.redraw_entries(entries=self.page_entities(self._current_page))
         self._current_page += 1
         if self._current_page >= self.total_pages:
@@ -79,7 +87,7 @@ class Timetable(BasicAnimatedTable):
         return self._redraw_task
 
     def stop(self):
-        self._node.log.info("Stopping Timetable Redraw Task for {0}".format(self))
+        self.log.info("Stopping Timetable Redraw Task for {0}".format(self))
         if self._redraw_task:
             self._redraw_task.cancel()
 

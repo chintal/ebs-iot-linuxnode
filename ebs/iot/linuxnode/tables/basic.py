@@ -3,6 +3,8 @@
 from math import floor
 from math import ceil
 
+from twisted import logger
+
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.relativelayout import RelativeLayout
@@ -17,8 +19,16 @@ from .spec import BasicTableSpec
 class BasicTable(object):
     def __init__(self, node, spec):
         self._node = node
+        self._log = None
         self._spec = spec
         self._entries = []
+
+    @property
+    def log(self):
+        if not self._log:
+            self._log = logger.Logger(namespace="table.{0}".format(self._spec.name),
+                                      source=self)
+        return self._log
 
     @property
     def spec(self) -> BasicTableSpec:
@@ -42,8 +52,7 @@ class BasicTable(object):
                 dedup_record.append(tags)
             entry.parent = self
             self._entries.append(entry)
-        self._node.log.info("Extracted {0} Entries from API response"
-                            "".format(len(self._entries)))
+        self.log.info("Extracted {0} Entries from API response".format(len(self._entries)))
 
 
 class BasicRenderableTable(BasicTable):
@@ -218,7 +227,7 @@ class BasicRenderableTable(BasicTable):
         return self.gui_table_container
 
     def redraw_entries(self, entries):
-        self._node.log.debug("Redrawing Table, Got {0} Entries".format(len(entries)))
+        self.log.debug("Redrawing Table, Got {0} Entries".format(len(entries)))
         if hasattr(self, '_alternate_fallback_handler'):
             self._alternate_fallback_handler(None, entries)
         self._gui_table_entries.clear_widgets()
