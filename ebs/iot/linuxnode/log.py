@@ -2,11 +2,15 @@
 
 import os
 import io
+import sys
 import time
 from twisted import logger
+from twisted.logger import formatEvent
+from twisted.logger import LogLevel
+from twisted.logger import LogLevelFilterPredicate
+from twisted.logger import FilteringLogObserver
 from twisted.logger import textFileLogObserver
 from twisted.logger import STDLibLogObserver
-from twisted.logger import formatEvent
 
 from appdirs import user_log_dir
 from datetime import datetime
@@ -39,9 +43,22 @@ class NodeLoggingMixin(ConfigMixin, BaseMixin):
         self.reactor.callWhenRunning(self._start_logging)
 
     def _observers(self):
+        if self.config.debug:
+            level = LogLevel.debug
+        else:
+            level = LogLevel.info
+
         return [
             # STDLibLogObserver(),
-            textFileLogObserver(io.open(self.log_file, 'a'))
+            FilteringLogObserver(
+                textFileLogObserver(sys.stdout),
+                predicates=[LogLevelFilterPredicate(LogLevel.warn)]
+            ),
+            FilteringLogObserver(
+                textFileLogObserver(io.open(self.log_file, 'a')),
+                predicates=[LogLevelFilterPredicate(level)]
+            ),
+
         ]
 
     def _start_logging(self):

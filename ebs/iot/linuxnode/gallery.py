@@ -337,7 +337,7 @@ class GalleryManager(BaseGalleryManager):
         return self._node.db_dir
 
     def _fetch(self):
-        self.log.info("Triggering Gallery Fetch")
+        self.log.debug("Triggering Gallery Fetch")
         session = self.db()
         try:
             results = self.db_get_resources(session).all()
