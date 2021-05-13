@@ -205,6 +205,10 @@ class EventManager(object):
         _ = self.db
 
     @property
+    def emid(self):
+        return self._emid
+
+    @property
     def preprocess_semaphore(self):
         if self._preprocess_semaphore is None:
             self._preprocess_semaphore = DeferredSemaphore(1)
@@ -537,15 +541,11 @@ class EventManagerMixin(BaseIoTNode):
         self._event_managers = {}
         super(EventManagerMixin, self).__init__(*args, **kwargs)
 
+    def event_manager_install(self, manager):
+        self.log.info("Installing Event Manager {1} with emid {0}".format(manager.emid, manager))
+        self._event_managers[manager.emid] = manager
+
     def event_manager(self, emid):
-        if emid not in self._event_managers.keys():
-            self.log.info("Initializing event manager {emid}", emid=emid)
-            if emid == WEBRESOURCE:
-                self._event_managers[emid] = WebResourceEventManager(self, emid)
-            elif emid == TEXT:
-                self._event_managers[emid] = TextEventManager(self, emid)
-            else:
-                self._event_managers[emid] = EventManager(self, emid)
         return self._event_managers[emid]
 
     @property
@@ -560,3 +560,8 @@ class EventManagerMixin(BaseIoTNode):
 
     def api_text_success(self, events):
         raise NotImplementedError
+
+    def start(self):
+        super(EventManagerMixin, self).start()
+        for emid, manager in self._event_managers.items():
+            manager.start()
