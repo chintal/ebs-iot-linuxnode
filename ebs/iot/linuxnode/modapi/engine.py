@@ -21,6 +21,7 @@ class ModularApiEngineBase(object):
         self._api_queue = ApiPersistentActionQueue(self)
 
     """ Proxy to Core Engine """
+
     @property
     def cache_dir(self):
         return os.path.join(self._actual.cache_dir, self._prefix)
@@ -28,6 +29,16 @@ class ModularApiEngineBase(object):
     @property
     def log(self):
         return self._actual.log
+
+    """ API Connection Status Primitives """
+    @property
+    def api_endpoint_connected(self):
+        return self._api_endpoint_connected
+
+    @api_endpoint_connected.setter
+    def api_endpoint_connected(self, value):
+        self._actual.modapi_signal_api_connected(value, self._prefix)
+        self._api_endpoint_connected = value
 
     """ API Task Management """
     @property
@@ -98,14 +109,6 @@ class ModularApiEngineBase(object):
         )
         return d
 
-    @property
-    def api_endpoint_connected(self):
-        return self._api_endpoint_connected
-
-    @api_endpoint_connected.setter
-    def api_endpoint_connected(self, value):
-        self._api_endpoint_connected = value
-
     def api_engine_reconnect(self):
         if self._api_engine_active:
             self.api_endpoint_connected = False
@@ -142,7 +145,7 @@ class ModularHttpApiEngine(ModularApiEngineBase):
     def __init__(self, actual):
         super(ModularHttpApiEngine, self).__init__(actual)
         self._api_token = None
-        self._internet_connected = None
+        self._internet_connected = False
         self._internet_link = None
 
     """ Proxy to Core Engine """
@@ -162,12 +165,35 @@ class ModularHttpApiEngine(ModularApiEngineBase):
     def config(self):
         return self._actual.config
 
+    """ Network Status Primitives """
+
+    # TODO Consider moving the core network status primitives
+    #  entirely into the manager instead
+
+    @property
+    def internet_connected(self):
+        return self._internet_connected
+
+    @internet_connected.setter
+    def internet_connected(self, value):
+        self._actual.modapi_signal_internet_connected(value, self._prefix)
+        self._internet_connected = value
+
+    @property
+    def internet_link(self):
+        return self._internet_link
+
+    @internet_link.setter
+    def internet_link(self, value):
+        self._actual.modapi_signal_internet_link(value, self._prefix)
+        self._internet_link = value
+
     """ API Engine Management """
     def api_engine_activate(self):
         # Probe for internet
         d = self.http_get('https://www.google.com')
 
-        def _display_internet_info(maybe_failure):
+        def _get_internet_info(maybe_failure):
             ld = self.network_info
 
             def _set_internet_link(l):
@@ -175,7 +201,7 @@ class ModularHttpApiEngine(ModularApiEngineBase):
                     self.internet_link = l.decode('utf-8')
             ld.addCallback(_set_internet_link)
             return maybe_failure
-        d.addBoth(_display_internet_info)
+        d.addBoth(_get_internet_info)
 
         def _made_connection(_):
             self.log.debug("Have Internet Connection")
@@ -204,22 +230,6 @@ class ModularHttpApiEngine(ModularApiEngineBase):
             _error_handler
         )
         return d
-
-    @property
-    def internet_link(self):
-        return self._internet_link
-
-    @internet_link.setter
-    def internet_link(self, value):
-        self._internet_link = value
-
-    @property
-    def internet_connected(self):
-        return self._internet_connected
-
-    @internet_connected.setter
-    def internet_connected(self, value):
-        self._internet_connected = value
 
     @property
     def api_token(self):
