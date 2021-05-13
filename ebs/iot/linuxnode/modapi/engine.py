@@ -20,6 +20,10 @@ class ModularApiEngineBase(object):
         self._api_endpoint_connected = None
         self._api_queue = ApiPersistentActionQueue(self)
 
+    @property
+    def name(self):
+        return self._prefix
+
     """ Proxy to Core Engine """
 
     @property
@@ -44,6 +48,9 @@ class ModularApiEngineBase(object):
     @property
     def api_tasks(self):
         return self._api_tasks
+
+    def install_task(self, task, period):
+        self._api_tasks.append((task, period))
 
     def _api_start_all_tasks(self, _):
         for task, period in self.api_tasks:

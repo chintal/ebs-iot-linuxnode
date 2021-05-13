@@ -22,6 +22,10 @@ class BaseIoTNode(ResourceManagerMixin, HttpClientMixin, BaseShellMixin,
     def __init__(self, *args, **kwargs):
         super(BaseIoTNode, self).__init__(*args, **kwargs)
 
+    def install(self):
+        super(BaseIoTNode, self).install()
+        self._log.info("Installing Node with ID {log_source.id}")
+
     def start(self):
         super(BaseIoTNode, self).start()
         self._log.info("Starting Node with ID {log_source.id}")

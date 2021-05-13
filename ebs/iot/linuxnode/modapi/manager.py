@@ -31,6 +31,11 @@ class ModularApiEngineManagerMixin(HttpClientMixin, NodeLoggingMixin):
             self.log.info("Starting Modular API Engine {0}".format(engine))
             engine.start()
 
+    def modapi_engine(self, name):
+        for engine in self._api_engines:
+            if engine.name == name:
+                return engine
+
     def modapi_stop(self):
         for engine in self._api_engines:
             self.log.info("Stopping Modular API Engine {0}".format(engine))

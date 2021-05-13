@@ -26,6 +26,9 @@ class BaseMixin(object):
     def app_resources(self):
         return self._app_resources
 
+    def install(self):
+        pass
+
     def start(self):
         pass
 
