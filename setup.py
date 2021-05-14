@@ -31,6 +31,9 @@ _requires = [
 
     # PdfPlayer
     'pdf2image',
+
+    # Text and Localization
+    'flufl.i18n',
 ]
 
 setuptools.setup(

@@ -97,7 +97,14 @@ class BaseTimetableMixin(NodeLoggingMixin):
     _timetable_entry_class = TimetableEntry
 
     def __init__(self, *args, **kwargs):
+        self._timetable = None
         super(BaseTimetableMixin, self).__init__(*args, **kwargs)
+
+    def install(self):
+        super(BaseTimetableMixin, self).install()
+        self.log.info("Installing TimeTable {0} with {1}"
+                      "".format(self._timetable_class.__name__,
+                                self._timetable_entry_class.__name__))
         self._timetable = self._timetable_class(self)
 
     def timetable_update(self, data, incremental=False):
