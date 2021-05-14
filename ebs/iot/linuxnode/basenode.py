@@ -5,18 +5,20 @@ from .nodeid import NodeIDGuiMixin
 from .busy import BusySpinnerGuiMixin
 from .background import OverlayWindowGuiMixin
 from .marquee import MarqueeGuiMixin
+from .text import AdvancedTextGuiMixin
 
 from .log import NodeLoggingMixin
 from .nodeid import NodeIDMixin
 from .busy import NodeBusyMixin
 from .http import HttpClientMixin
 from .shell import BaseShellMixin
+from .text import AdvancedTextMixin
 
 from .resources import ResourceManagerMixin
 
 
 class BaseIoTNode(ResourceManagerMixin, HttpClientMixin, BaseShellMixin,
-                  NodeBusyMixin, NodeLoggingMixin, NodeIDMixin):
+                  NodeBusyMixin, AdvancedTextMixin, NodeLoggingMixin, NodeIDMixin):
     _has_gui = False
 
     def __init__(self, *args, **kwargs):
@@ -36,7 +38,8 @@ class BaseIoTNode(ResourceManagerMixin, HttpClientMixin, BaseShellMixin,
 
 
 class BaseIoTNodeGui(NodeIDGuiMixin, BusySpinnerGuiMixin, LoggingGuiMixin,
-                     MarqueeGuiMixin, OverlayWindowGuiMixin, BaseIoTNode):
+                     MarqueeGuiMixin, AdvancedTextGuiMixin, OverlayWindowGuiMixin,
+                     BaseIoTNode):
 
     def __init__(self, *args, **kwargs):
         self._application = kwargs.pop('application')

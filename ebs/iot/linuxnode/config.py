@@ -249,8 +249,19 @@ class IoTNodeConfig(object):
     # Fonts
     @property
     def text_font_name(self):
-        font_name = self._config.get('text', 'font_name', fallback=None)
-        return font_name
+        return self._config.get('text', 'font_name', fallback=None)
+    
+    @property
+    def text_use_fcm(self):
+        return self._config.getboolean('text', 'use_fcm', fallback=False)
+    
+    @property
+    def text_fcm_system(self):
+        return self._config.getboolean('text', 'fcm_system', fallback=True)
+    
+    @property
+    def text_fcm_fonts(self):
+        return self._config.get('text', 'fcm_fonts', fallback=None)
 
 
 class ConfigMixin(object):
@@ -260,5 +271,5 @@ class ConfigMixin(object):
         super(ConfigMixin, self).__init__(*args, **kwargs)
 
     @property
-    def config(self):
+    def config(self) -> IoTNodeConfig:
         return self._config
