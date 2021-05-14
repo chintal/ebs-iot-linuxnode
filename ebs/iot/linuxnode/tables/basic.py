@@ -92,6 +92,10 @@ class BasicRenderableTable(BasicTable):
         self._gui_table_header.add_widget(BoxLayout(size_hint=(None, None), width=20,
                                                     height=self.spec.row_height))
 
+        l_font_params = self.spec.font_params
+        l_font_params.update({
+            'bold': True
+        })
         for colspec in self.spec.column_specs:
             kwargs = dict(
                 text=colspec.title,
@@ -99,11 +103,9 @@ class BasicRenderableTable(BasicTable):
                 color=palette.header_cell_foreground,
                 size_hint=(colspec.width_hint, None),
                 height=self.spec.row_height,
-                font_size=self.spec.font_size,
-                font_name=self.spec.font_name,
                 valign='middle', halign='center',
                 padding_x=15, width=colspec.width,
-                bold=colspec.font_bold,
+                **l_font_params
             )
             label = SelfScalingColorLabel(
                 **{k: v for k, v in kwargs.items() if v is not None}

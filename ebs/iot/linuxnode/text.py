@@ -9,17 +9,23 @@ from .log import NodeLoggingMixin
 
 
 class AdvancedTextMixin(NodeLoggingMixin, BaseMixin):
-    pass
+    def __init__(self, *args, **kwargs):
+        super(AdvancedTextMixin, self).__init__(*args, **kwargs)
+
+    def install(self):
+        super(AdvancedTextMixin, self).install()
 
 
 class AdvancedTextGuiMixin(AdvancedTextMixin, BaseGuiMixin):
     def __init__(self, *args, **kwargs):
-        super(AdvancedTextGuiMixin, self).__init__(*args, **kwargs)
         self._text_font_context = None
+        super(AdvancedTextGuiMixin, self).__init__(*args, **kwargs)
 
-    def install(self):
-        if self.config.text_use_fcm:
+    @property
+    def text_font_context(self):
+        if not self._text_font_context and self.config.text_use_fcm:
             self._text_create_fcm()
+        return self._text_font_context
 
     def _text_create_fcm(self):
         fc = self._appname
@@ -37,7 +43,7 @@ class AdvancedTextGuiMixin(AdvancedTextMixin, BaseGuiMixin):
     @property
     def text_font_params(self):
         params = {}
-        if self._text_font_context:
+        if self.text_font_context:
             params.update({
                 'font_context': self._text_font_context
             })

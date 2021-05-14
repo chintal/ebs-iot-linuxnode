@@ -45,17 +45,19 @@ class BasicRenderableTableEntry(BasicTableEntry):
                                              height=self.parent.spec.row_height))
 
         for colspec in self.parent.spec.column_specs:
+            l_font_params = self.parent.spec.font_params
+            l_font_params.update({
+                'bold': colspec.font_bold
+            })
             kwargs = dict(
                 text=str(getattr(self, colspec.accessor)),
                 bgcolor=palette.cell_background,
                 color=palette.cell_foreground,
                 size_hint=(colspec.width_hint, None),
                 height=self.parent.spec.row_height,
-                font_name=self.parent.spec.font_name,
-                font_size=self.parent.spec.font_size,
                 valign='middle', halign=colspec.halign,
                 padding_x=15, width=colspec.width,
-                bold=colspec.font_bold,
+                **l_font_params
             )
             label = SelfScalingColorLabel(
                 **{k: v for k, v in kwargs.items() if v is not None}

@@ -88,7 +88,7 @@ class BasicColumnSpec(object):
 class BasicTableSpec(object):
     def __init__(self, column_specs, show_column_header, dedup_keys=False,
                  row_height=90, row_spacing=10, font_size='42sp', name='UNK',
-                 font_bold=False, font_name=None):
+                 font_bold=False, font_name=None, font_context=None):
         self._name = name
         self._column_specs = column_specs
         for colspec in self._column_specs:
@@ -100,6 +100,7 @@ class BasicTableSpec(object):
         self._font_bold = font_bold
         self._dedup_keys = dedup_keys
         self._font_name = font_name
+        self._font_context = font_context
 
     @property
     def name(self):
@@ -110,12 +111,26 @@ class BasicTableSpec(object):
         return self._font_name
 
     @property
+    def font_context(self):
+        return self._font_context
+
+    @property
     def font_size(self):
         return self._font_size
 
     @property
     def font_bold(self):
         return self._font_bold
+
+    @property
+    def font_params(self):
+        params = {
+            'font_context': self.font_context,
+            'font_name': self.font_name,
+            'font_size': self.font_size,
+            'bold': self.font_bold,
+        }
+        return {k: v for k, v in params.items() if v is not None}
 
     @property
     def show_column_header(self) -> bool:
