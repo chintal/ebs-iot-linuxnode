@@ -5,6 +5,9 @@ class CompositeAnimationManager(object):
         self._animations = []
         self._finish_handler = None
 
+    def __len__(self):
+        return len(self._animations)
+
     def add(self, animation, widget):
         self._animations.append((animation, widget))
 

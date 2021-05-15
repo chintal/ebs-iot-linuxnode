@@ -183,8 +183,12 @@ class BasicAnimatedTable(BasicRenderableTable):
             self._destroy_dangling_entities()
             gc.collect()
 
-        self._animations.when_done(_finish)
-        self._animation_lock = True
-        self._animations.start()
         self._current_entries = new_entries
         new_entries = None
+
+        if len(self._animations):
+            self._animations.when_done(_finish)
+            self._animation_lock = True
+            self._animations.start()
+        else:
+            _finish()
