@@ -15,6 +15,8 @@ from appdirs import user_config_dir
 
 class IoTNodeConfig(object):
     _appname = 'iotnode'
+    _root = os.path.abspath(os.path.dirname(__file__))
+    _roots = [_root]
     _config_file = os.path.join(user_config_dir(_appname), 'config.ini')
     _sys_config_file = os.path.join('/etc/raspap/custom.ini')
 
@@ -38,6 +40,25 @@ class IoTNodeConfig(object):
         if not self._config.has_section(section):
             self._config.add_section(section)
             self._write_config()
+
+    # Paths
+    @property
+    def app_root(self):
+        return self._root
+
+    @property
+    def app_resources(self):
+        return os.path.join(self.app_root, 'resources')
+
+    @property
+    def roots(self):
+        return self._roots
+
+    def get_path(self, filepath):
+        for root in self._roots:
+            if os.path.exists(os.path.join(root, filepath)):
+                return os.path.join(root, filepath)
+        return filepath
 
     # Platform
     @property
@@ -249,8 +270,8 @@ class IoTNodeConfig(object):
     # Fonts
     @property
     def text_font_name(self):
-        return self._config.get('text', 'font_name', fallback=None)
-    
+        return self.get_path(self._config.get('text', 'font_name', fallback=None)
+)
     @property
     def text_use_fcm(self):
         return self._config.getboolean('text', 'use_fcm', fallback=False)
@@ -261,7 +282,7 @@ class IoTNodeConfig(object):
     
     @property
     def text_fcm_fonts(self):
-        return self._config.get('text', 'fcm_fonts', fallback=None)
+        return self.get_path(self._config.get('text', 'fcm_fonts', fallback=None))
 
 
 class ConfigMixin(object):
