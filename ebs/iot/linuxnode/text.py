@@ -1,70 +1,45 @@
 
 
 import os
-from babel import Locale
-from functools import partial
 from kivy.core.text import FontContextManager
 
 from .basemixin import BaseMixin
-from .basemixin import BaseGuiMixin
+from .config import ConfigMixin
 from .log import NodeLoggingMixin
+from .basemixin import BaseGuiMixin
+from .i18n import TranslationManager
 
 
-indian_languages = [
-    'en_IN',  # English
-    'hi_IN',  # Hindi
-    'te_IN',  # Telugu
-    'ta_IN',  # Tamil
-    'bn_IN',  # Bengali
-    'pa_IN',  # Punjabi
-    'ur_IN',  # Urdu
-    'kn_IN',  # Kannada
-    'or_IN',  # Oriya
-    'gu_IN',  # Gujarati
-    'ml_IN',  # Malayalam
-]
-
-
-class AdvancedTextMixin(NodeLoggingMixin, BaseMixin):
+class AdvancedTextMixin(NodeLoggingMixin, ConfigMixin, BaseMixin):
     _supported_languages = ['en_US']
 
     def __init__(self, *args, **kwargs):
-        self._i18n_locales = {}
-        self._i18n_contexts = {}
         super(AdvancedTextMixin, self).__init__(*args, **kwargs)
+        self._i18n = TranslationManager(self.i18n_supported_languages,
+                                        self._i18n_catalog_dirs,
+                                        twisted_logging=True)
 
-    def i18n_install_language(self, language):
-        l = Locale.parse(language, sep='_')
-        self.log.info("Installing Locale {0} : {1}".format(language, l.display_name))
-        self._i18n_locales[language] = l
+    @property
+    def _i18n_catalog_dirs(self):
+        return [os.path.join(x, 'locale') for x in self.config.roots]
 
     @property
     def i18n_supported_languages(self):
+        """
+        Return the list of languages supported by the application. The list contains
+        locale codes of the form 'en_US'. This is largely intended for use by code
+        which requires i18n support. Such code should use this list to create and
+        install a suitable set of i18n_context.
+        """
         return self._supported_languages
 
-    def i18n_install_context(self, context, language):
-        if context in self._i18n_contexts.keys():
-            raise KeyError(context)
-        self._i18n_contexts[context] = {
-            'locale': self._i18n_locales[language],
-            'i18n': lambda x: x,
-        }
-
-    def _i18n(self, context, message):
-        print("Converting {1} using ctx {0}".format(context, message))
-        return context['i18n'](message)
-
-    def _i18n_translate(self, context, obj):
-        return self._i18n(context, obj)
-
-    def i18n_translator(self, context):
-        ctx = self._i18n_contexts[context]
-        return partial(self._i18n_translate, ctx)
+    @property
+    def i18n(self):
+        return self._i18n
 
     def install(self):
         super(AdvancedTextMixin, self).install()
-        for language in self._supported_languages:
-            self.i18n_install_language(language)
+        self._i18n.install()
 
 
 class AdvancedTextGuiMixin(AdvancedTextMixin, BaseGuiMixin):

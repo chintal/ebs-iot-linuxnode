@@ -18,20 +18,17 @@ class TranslatableTableSpec(BasicTableSpec):
             self.parent.log.debug("Installing Language {0} for Table {1}".format(language, self.name))
             self.i18n_install_language(language)
 
-    def _i18n_context_name(self, language):
-        return "{0}.{1}".format(self.name, language)
-
     def i18n_install_language(self, language):
         if language not in self._languages:
             self._languages.append(language)
-        self.parent.node.i18n_install_context(self._i18n_context_name(language), language)
+        self.parent.node.i18n.install_context(self.name, language)
 
     @property
     def languages(self):
         return self._languages
 
     def i18n_translator(self, language):
-        return self.parent.node.i18n_translator(self._i18n_context_name(language))
+        return self.parent.node.i18n.translator(self.name, language)
 
 
 class TranslatableRenderableTable(BasicRenderableTable):
