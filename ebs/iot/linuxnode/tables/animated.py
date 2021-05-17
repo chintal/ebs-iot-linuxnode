@@ -2,21 +2,22 @@
 
 import gc
 from collections import OrderedDict
-from .basic import BasicRenderableTable
 
 from kivy.animation import Animation
 from kivy.uix.relativelayout import RelativeLayout
 
 from ebs.iot.linuxnode.animations.composite import CompositeAnimationManager
 
+from .translatable import TranslatableRenderableTable
 
-class BasicAnimatedTable(BasicRenderableTable):
+
+class AnimatedTable(TranslatableRenderableTable):
     def __init__(self, node, spec):
         self._current_entries = OrderedDict()
         self._animations = CompositeAnimationManager()
         self._animation_layer = None
         self._animation_lock = False
-        super(BasicAnimatedTable, self).__init__(node, spec)
+        super(AnimatedTable, self).__init__(node, spec)
 
     @property
     def active_entries(self):

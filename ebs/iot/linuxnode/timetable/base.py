@@ -6,10 +6,12 @@ from twisted.internet.task import deferLater
 from twisted.internet.defer import CancelledError
 
 from ebs.iot.linuxnode.log import NodeLoggingMixin
+from ebs.iot.linuxnode.text import AdvancedTextMixin
+from ebs.iot.linuxnode.text import AdvancedTextGuiMixin
 from ebs.iot.linuxnode.basemixin import BaseGuiMixin
 
-from ebs.iot.linuxnode.tables.animated import BasicAnimatedTable
-from ebs.iot.linuxnode.tables.entries import BasicRenderableTableEntry
+from ebs.iot.linuxnode.tables.animated import AnimatedTable
+from ebs.iot.linuxnode.tables.renderable import BasicRenderableTableEntry
 from ebs.iot.linuxnode.tables.spec import BasicTablePalette
 from ebs.iot.linuxnode.tables.spec import BasicTableSpec
 from ebs.iot.linuxnode.tables.spec import BasicColumnSpec
@@ -32,16 +34,17 @@ class TimetableEntry(BasicRenderableTableEntry):
         raise NotImplementedError
 
 
-class Timetable(BasicAnimatedTable):
+class Timetable(AnimatedTable):
     _prior_window = 360
     _post_window = 60
     _period_page = 12
 
     def __init__(self, node, spec=None):
+        self._log = None
         self._redraw_task = None
         self._current_page = 0
         if not spec:
-            spec = BasicTableSpec([
+            spec = BasicTableSpec(self, [
                 BasicColumnSpec("Name", 'name'),
                 BasicColumnSpec("Start Time", "ts_start"),
                 BasicColumnSpec("End Time", "ts_end")],
@@ -92,7 +95,7 @@ class Timetable(BasicAnimatedTable):
             self._redraw_task.cancel()
 
 
-class BaseTimetableMixin(NodeLoggingMixin):
+class BaseTimetableMixin(AdvancedTextMixin, NodeLoggingMixin):
     _timetable_class = Timetable
     _timetable_entry_class = TimetableEntry
 
@@ -112,7 +115,7 @@ class BaseTimetableMixin(NodeLoggingMixin):
                                incremental)
 
 
-class BaseTimetableGuiMixin(BaseTimetableMixin, BaseGuiMixin):
+class BaseTimetableGuiMixin(AdvancedTextGuiMixin, BaseTimetableMixin, BaseGuiMixin):
     def __init__(self, *args, **kwargs):
         self._timetable_palette = None
         self._timetable_gui = None

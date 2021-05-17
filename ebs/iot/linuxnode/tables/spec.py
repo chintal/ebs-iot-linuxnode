@@ -86,10 +86,11 @@ class BasicColumnSpec(object):
 
 
 class BasicTableSpec(object):
-    def __init__(self, column_specs, show_column_header, dedup_keys=False,
-                 row_height=90, row_spacing=10, font_size='42sp', name='UNK',
-                 font_bold=False, font_name=None, font_context=None):
+    def __init__(self, parent, column_specs, name='UNK', show_column_header=True,
+                 dedup_keys=False, row_height=90, row_spacing=10,
+                 font_size='42sp', font_bold=False, font_name=None, font_context=None):
         self._name = name
+        self._parent = parent
         self._column_specs = column_specs
         for colspec in self._column_specs:
             colspec.parent = self
@@ -102,9 +103,16 @@ class BasicTableSpec(object):
         self._font_name = font_name
         self._font_context = font_context
 
+    def install(self):
+        pass
+
     @property
     def name(self):
         return self._name
+
+    @property
+    def parent(self):
+        return self._parent
 
     @property
     def font_name(self):
