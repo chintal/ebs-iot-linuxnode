@@ -9,6 +9,7 @@
 
 
 import os
+import pkg_resources
 from six.moves.configparser import ConfigParser
 from appdirs import user_config_dir
 
@@ -28,6 +29,11 @@ class IoTNodeConfig(object):
         print("Reading System Config File {}".format(self._sys_config_file))
         self._sys_config.read(self._sys_config_file)
         self._config_apply_init()
+        print("EBS IOT Linux Node, version {0}".format(self.linuxnode_version))
+
+    @property
+    def linuxnode_version(self):
+        return pkg_resources.get_distribution('ebs-iot-linuxnode').version
 
     def _config_apply_init(self):
         self._apply_display_layer()
