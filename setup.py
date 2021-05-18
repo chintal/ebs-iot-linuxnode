@@ -33,7 +33,7 @@ _requires = [
     'pdf2image',
 
     # Text and Localization
-    'flufl.i18n',
+    'babel',
 ]
 
 setuptools.setup(
