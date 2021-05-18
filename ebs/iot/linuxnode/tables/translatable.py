@@ -7,7 +7,11 @@ from ebs.iot.linuxnode.tables.spec import BasicTableSpec
 class TranslatableTableSpec(BasicTableSpec):
     def __init__(self, *args, **kwargs):
         self._languages = kwargs.pop('languages', [])
+        self._metadata = kwargs.pop('i18n_metadata', {})
         super(TranslatableTableSpec, self).__init__(*args, **kwargs)
+
+    def install_metadata(self, metadata):
+        self._metadata.update(metadata)
 
     def install(self):
         super(TranslatableTableSpec, self).install()
@@ -18,10 +22,23 @@ class TranslatableTableSpec(BasicTableSpec):
             self.parent.log.debug("Installing Language {0} for Table {1}".format(language, self.name))
             self.i18n_install_language(language)
 
+    @property
+    def i18n_metadata(self):
+        if not self._metadata:
+            self._metadata = {
+                'project': None,
+                'version': None,
+                'msgid_bugs_address': None,
+                'language_team': None,
+                'last_translator': None,
+                'copyright_holder': None,
+            }
+        return self._metadata
+
     def i18n_install_language(self, language):
         if language not in self._languages:
             self._languages.append(language)
-        self.parent.node.i18n.install_context(self.name, language)
+        self.parent.node.i18n.install_context(self.name, language, metadata=self.i18n_metadata)
 
     @property
     def languages(self):
