@@ -33,7 +33,7 @@ _requires = [
     'pdf2image',
 
     # Text and Localization
-    'babel',
+    'hoshi',
 ]
 
 setuptools.setup(

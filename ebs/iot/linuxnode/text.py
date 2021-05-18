@@ -3,11 +3,12 @@
 import os
 from kivy.core.text import FontContextManager
 
+from hoshi.i18n import TranslationManager
+
 from .basemixin import BaseMixin
 from .config import ConfigMixin
 from .log import NodeLoggingMixin
 from .basemixin import BaseGuiMixin
-from .i18n import TranslationManager
 
 
 class AdvancedTextMixin(NodeLoggingMixin, ConfigMixin, BaseMixin):
