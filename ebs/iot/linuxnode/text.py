@@ -30,7 +30,7 @@ class AdvancedTextMixin(NodeLoggingMixin, ConfigMixin, BaseMixin):
         Return the list of languages supported by the application. The list contains
         locale codes of the form 'en_US'. This is largely intended for use by code
         which requires i18n support. Such code should use this list to create and
-        install a suitable set of i18n_context.
+        install a suitable set of i18n_contexts.
         """
         return self._supported_languages
 
