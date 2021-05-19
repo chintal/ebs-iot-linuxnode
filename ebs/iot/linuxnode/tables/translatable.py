@@ -51,15 +51,33 @@ class TranslatableTableSpec(BasicTableSpec):
 class TranslatableRenderableTable(BasicRenderableTable):
     def __init__(self, *args, **kwargs):
         self._i18n_current = None
+        self._i18n_language = None
+        self._i18n_handlers = []
         super(TranslatableRenderableTable, self).__init__(*args, **kwargs)
+
+    def install_language_change_handler(self, handler):
+        self._i18n_handlers.append(handler)
 
     def install(self):
         super(TranslatableRenderableTable, self).install()
-        self._i18n_current = self.spec.i18n_translator(self.spec.languages[0])
+        self.language = self.spec.languages[0]
 
     @property
     def spec(self) -> TranslatableTableSpec:
         return self._spec
+
+    @property
+    def language(self):
+        return self._i18n_language
+    
+    @language.setter
+    def language(self, value):
+        if value not in self.spec.languages:
+            raise ValueError("Language '{0}' not installed!".format(value))
+        self._i18n_language = value
+        self._i18n_current = self.spec.i18n_translator(value)
+        for handler in self._i18n_handlers:
+            handler(self, value)
 
     @property
     def i18n(self):
