@@ -137,7 +137,9 @@ class AnimatedTable(TranslatableRenderableTable):
     def _build_entries(self, entries):
         rv = OrderedDict()
         for entry in entries:
-            tags = tuple([getattr(entry, x) for x in self.spec.dedup_keys])
+            tags = [getattr(entry, x) for x in self.spec.dedup_keys]
+            tags.append(self.language)
+            tags = tuple(tags)
             entry_bin = entry.build(self.palette)
             entry_bin.size_hint = (None, None)
             entry_bin.size = self._entry_size()
@@ -185,7 +187,6 @@ class AnimatedTable(TranslatableRenderableTable):
             gc.collect()
 
         self._current_entries = new_entries
-        new_entries = None
 
         if len(self._animations):
             self._animations.when_done(_finish)

@@ -14,23 +14,19 @@ from ebs.iot.linuxnode.widgets.labels import SelfScalingColorLabel
 
 class BasicRenderableTableEntry(BasicTableEntry):
     def __init__(self, data):
-        self._gui_entry = None
         super(BasicRenderableTableEntry, self).__init__(data)
 
     def build(self, palette=None):
-        if self._gui_entry:
-            return self._gui_entry
-
         if not palette:
             palette = self.parent.palette
 
-        self._gui_entry = ColorBoxLayout(orientation='horizontal', spacing=10,
-                                         bgcolor=palette.grid_background,
-                                         size_hint=(1, None),
-                                         height=self.parent.spec.row_height)
+        _gui_entry = ColorBoxLayout(orientation='horizontal', spacing=10,
+                                    bgcolor=palette.grid_background,
+                                    size_hint=(1, None),
+                                    height=self.parent.spec.row_height)
 
-        self._gui_entry.add_widget(BoxLayout(size_hint=(None, None), width=20,
-                                             height=self.parent.spec.row_height))
+        _gui_entry.add_widget(BoxLayout(size_hint=(None, None), width=20,
+                                        height=self.parent.spec.row_height))
 
         for colspec in self.parent.spec.column_specs:
             l_font_params = self.parent.spec.font_params
@@ -38,7 +34,7 @@ class BasicRenderableTableEntry(BasicTableEntry):
                 'bold': colspec.font_bold
             })
             kwargs = dict(
-                text=str(getattr(self, colspec.accessor)),
+                text=self.parent.preprocess(getattr(self, colspec.accessor)),
                 bgcolor=palette.cell_background,
                 color=palette.cell_foreground,
                 size_hint=(colspec.width_hint, None),
@@ -51,11 +47,11 @@ class BasicRenderableTableEntry(BasicTableEntry):
                 **{k: v for k, v in kwargs.items() if v is not None}
             )
             label.bind(size=label.setter('text_size'))
-            self._gui_entry.add_widget(label)
+            _gui_entry.add_widget(label)
 
-        self._gui_entry.add_widget(BoxLayout(size_hint=(None, None), width=20,
-                                             height=self.parent.spec.row_height))
-        return self._gui_entry
+        _gui_entry.add_widget(BoxLayout(size_hint=(None, None), width=20,
+                                        height=self.parent.spec.row_height))
+        return _gui_entry
 
 
 class BasicRenderableTable(BasicTable):
@@ -80,7 +76,7 @@ class BasicRenderableTable(BasicTable):
         self._palette = value
 
     def preprocess(self, value):
-        return value
+        return str(value)
 
     @property
     def gui_table_container(self):
