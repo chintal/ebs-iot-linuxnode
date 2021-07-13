@@ -1,4 +1,4 @@
-
+import kivy.uix.boxlayout
 
 from ebs.iot.linuxnode.tables.renderable import BasicRenderableTable
 from ebs.iot.linuxnode.tables.spec import BasicTableSpec
@@ -7,6 +7,7 @@ from ebs.iot.linuxnode.tables.spec import BasicTableSpec
 class TranslatableTableSpec(BasicTableSpec):
     def __init__(self, *args, **kwargs):
         self._languages = kwargs.pop('languages', [])
+        self._next_language = -1
         self._metadata = kwargs.pop('i18n_metadata', {})
         super(TranslatableTableSpec, self).__init__(*args, **kwargs)
 
@@ -44,6 +45,13 @@ class TranslatableTableSpec(BasicTableSpec):
     def languages(self):
         return self._languages
 
+    @property
+    def next_language(self):
+        self._next_language += 1
+        if self._next_language == len(self._languages):
+            self._next_language = 0
+        return self._languages[self._next_language]
+
     def i18n_translator(self, language):
         return self.parent.node.i18n.translator(self.name, language)
 
@@ -60,7 +68,9 @@ class TranslatableRenderableTable(BasicRenderableTable):
 
     def install(self):
         super(TranslatableRenderableTable, self).install()
-        self.language = self.spec.languages[0]
+        self.language = self.spec.next_language
+        self.install_language_change_handler(self._redraw_title)
+        self.install_language_change_handler(self._redraw_header)
 
     @property
     def spec(self) -> TranslatableTableSpec:
@@ -79,9 +89,20 @@ class TranslatableRenderableTable(BasicRenderableTable):
         for handler in self._i18n_handlers:
             handler(self, value)
 
+    def next_language(self):
+        self.language = self.spec.next_language
+
     @property
     def i18n(self):
         return self._i18n_current
 
     def preprocess(self, value):
         return self.i18n(value)
+
+    def _redraw_title(self, *_):
+        pass
+
+    def _redraw_header(self, *_):
+        new_header = self._build_header(palette=self.palette)
+        self._gui_table.remove_widget(self._gui_table.children[2])
+        self._gui_table.add_widget(new_header, 2)

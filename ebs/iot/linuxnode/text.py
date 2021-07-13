@@ -17,8 +17,7 @@ class AdvancedTextMixin(NodeLoggingMixin, ConfigMixin, BaseMixin):
     def __init__(self, *args, **kwargs):
         super(AdvancedTextMixin, self).__init__(*args, **kwargs)
         self._i18n = TranslationManager(self.i18n_supported_languages,
-                                        self._i18n_catalog_dirs,
-                                        twisted_logging=True)
+                                        self._i18n_catalog_dirs)
 
     @property
     def _i18n_catalog_dirs(self):

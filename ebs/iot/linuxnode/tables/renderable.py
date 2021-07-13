@@ -89,14 +89,14 @@ class BasicRenderableTable(BasicTable):
         return self._gui_table_container
 
     def _build_header(self, palette):
-        self._gui_table_header = ColorBoxLayout(orientation='horizontal',
-                                                spacing=self.spec.row_spacing,
-                                                bgcolor=palette.grid_background,
-                                                size_hint=(1, None),
-                                                height=self.spec.row_height)
+        _gui_table_header = ColorBoxLayout(orientation='horizontal',
+                                           spacing=self.spec.row_spacing,
+                                           bgcolor=palette.grid_background,
+                                           size_hint=(1, None),
+                                           height=self.spec.row_height)
 
-        self._gui_table_header.add_widget(BoxLayout(size_hint=(None, None), width=20,
-                                                    height=self.spec.row_height))
+        _gui_table_header.add_widget(BoxLayout(size_hint=(None, None), width=20,
+                                               height=self.spec.row_height))
 
         l_font_params = self.spec.font_params
         l_font_params.update({
@@ -118,10 +118,11 @@ class BasicRenderableTable(BasicTable):
                 **{k: v for k, v in kwargs.items() if v is not None}
             )
             label.bind(size=label.setter('text_size'))
-            self._gui_table_header.add_widget(label)
+            _gui_table_header.add_widget(label)
 
-        self._gui_table_header.add_widget(BoxLayout(size_hint=(None, None), width=20,
-                                                    height=self.spec.row_height))
+        _gui_table_header.add_widget(BoxLayout(size_hint=(None, None), width=20,
+                                               height=self.spec.row_height))
+        return _gui_table_header
 
     @property
     def row_pitch(self):
@@ -210,7 +211,7 @@ class BasicRenderableTable(BasicTable):
             pass
 
         if self.spec.show_column_header:
-            self._build_header(self.palette)
+            self._gui_table_header = self._build_header(self.palette)
             self._gui_table.add_widget(self._gui_table_header)
             _reserved_height += self._gui_table_header.height
 
