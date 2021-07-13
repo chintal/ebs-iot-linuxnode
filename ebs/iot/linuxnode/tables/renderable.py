@@ -215,7 +215,6 @@ class BasicRenderableTable(BasicTable):
         self._gui_table.add_widget(BoxLayout(size_hint=(1, None),
                                              height=self.spec.row_spacing))
         _reserved_height += self.spec.row_spacing
-        _reserved_height += self.spec.row_spacing
 
         def _table_entries_height(_, value):
             self._gui_table_entries.height = value - _reserved_height
@@ -231,7 +230,6 @@ class BasicRenderableTable(BasicTable):
         else:
             handler = self._entries_change_handler
         handler(self._gui_table_entries, self._gui_table_entries.children)
-
         return self.gui_table_container
 
     def redraw_entries(self, entries):
