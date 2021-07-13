@@ -39,7 +39,8 @@ class BasicTablePalette(object):
 
 
 class BasicColumnSpec(object):
-    def __init__(self, title, accessor, halign=None, font_bold=None, width=None, width_hint=None):
+    def __init__(self, title, accessor, halign=None, font_bold=None,
+                 width=None, width_hint=None, markup=False):
         self._parent = None
         self._title = title
         self._accessor = accessor
@@ -47,6 +48,7 @@ class BasicColumnSpec(object):
         self._font_bold = font_bold
         self._width = width
         self._width_hint = width_hint
+        self._markup = markup
 
     @property
     def parent(self):
@@ -83,6 +85,10 @@ class BasicColumnSpec(object):
         if self._width:
             return None
         return self._width_hint or 1
+
+    @property
+    def markup(self):
+        return self._markup
 
 
 class BasicTableSpec(object):

@@ -41,6 +41,7 @@ class BasicRenderableTableEntry(BasicTableEntry):
                 height=self.parent.spec.row_height,
                 valign='middle', halign=colspec.halign,
                 padding_x=15, width=colspec.width,
+                markup=colspec.markup,
                 **l_font_params
             )
             label = SelfScalingColorLabel(
@@ -213,6 +214,7 @@ class BasicRenderableTable(BasicTable):
 
         self._gui_table.add_widget(BoxLayout(size_hint=(1, None),
                                              height=self.spec.row_spacing))
+        _reserved_height += self.spec.row_spacing
         _reserved_height += self.spec.row_spacing
 
         def _table_entries_height(_, value):
