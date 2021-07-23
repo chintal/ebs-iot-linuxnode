@@ -128,7 +128,7 @@ class BasicRenderableTable(BasicTable):
     @property
     def entries_per_page(self):
         if self._gui_table in self._gui_table_container.children:
-            return floor(self._gui_table_entries.height / self.row_pitch)
+            return floor(self._gui_table_entries.height / self.row_pitch) - 1
         else:
             # TODO This is a race condition during GUI construction
             return 6
