@@ -546,6 +546,7 @@ class WebResourceEventManager(EventManager):
 class EventManagerMixin(BaseIoTNode):
     def __init__(self, *args, **kwargs):
         self._event_managers = {}
+        self._success_api_engine = None
         super(EventManagerMixin, self).__init__(*args, **kwargs)
 
     def event_manager_install(self, manager):
@@ -563,10 +564,14 @@ class EventManagerMixin(BaseIoTNode):
             return []
 
     def api_media_success(self, events):
-        raise NotImplementedError
+        if not self._success_api_engine:
+            raise NotImplementedError
+        self._success_api_engine.api_media_success(events)
 
     def api_text_success(self, events):
-        raise NotImplementedError
+        if not self._success_api_engine:
+            raise NotImplementedError
+        self._success_api_engine.api_text_success(events)
 
     def start(self):
         super(EventManagerMixin, self).start()

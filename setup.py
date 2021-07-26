@@ -9,6 +9,8 @@ _requires = [
     'SQLAlchemy',
     'kivy>=1.11.1',
     'kivy-garden',
+    'arrow',
+    'raspi_system',
 
     # Node Id
     'netifaces',
