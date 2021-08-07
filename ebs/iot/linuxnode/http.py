@@ -12,6 +12,7 @@ from twisted.internet.defer import DeferredSemaphore
 from treq.client import HTTPClient
 
 from .basemixin import BaseMixin
+from .common import HTTPError
 from .log import NodeLoggingMixin
 from .busy import NodeBusyMixin
 
@@ -26,12 +27,6 @@ from twisted.internet.error import ConnectError
 from twisted.internet.error import NoRouteError
 from twisted.web.client import ResponseNeverReceived
 from .shell.network import NetworkInfoMixin
-
-
-class HTTPError(Exception):
-    def __init__(self, response):
-        self.response = response
-
 
 _http_errors = (HTTPError, DNSLookupError, NoRouteError,
                 TimeoutError, ConnectError, ResponseNeverReceived)
