@@ -25,12 +25,11 @@ from .mediaplayer import MediaPlayerBusy
 from .marquee import MarqueeBusy
 from .widgets.pdfplayer import generate_pdf_images
 
+from .constants import WEBRESOURCE
+from .constants import TEXT
 
 Base = declarative_base()
 metadata = Base.metadata
-
-WEBRESOURCE = 1
-TEXT = 2
 
 
 class WebResourceEventsModel(Base):
