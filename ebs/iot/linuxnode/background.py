@@ -201,6 +201,8 @@ class BackgroundGuiMixin(ConfigMixin, BaseGuiMixin):
         self.log.debug("Resuming Background")
         if not self._bg_container.parent:
             self.gui_main_content.add_widget(self._bg_container, len(self.gui_main_content.children))
+        if hasattr(self.gui_bg, 'retrigger'):
+            self.gui_bg.retrigger()
         if isinstance(self.gui_bg, Video):
             self.gui_bg.state = 'play'
         elif isinstance(self.gui_bg, ExternalMediaPlayer):

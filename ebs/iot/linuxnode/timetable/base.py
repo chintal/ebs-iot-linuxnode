@@ -93,6 +93,11 @@ class Timetable(AnimatedTable):
 
         return self._redraw_task
 
+    def retrigger(self):
+        if self._redraw_task.active():
+            self._redraw_task.cancel()
+        self.step()
+
     def stop(self):
         self.log.info("Stopping Timetable Redraw Task for {0}".format(self))
         if self._redraw_task:
