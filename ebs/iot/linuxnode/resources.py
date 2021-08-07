@@ -22,9 +22,8 @@ from sqlalchemy.orm.exc import NoResultFound
 from .http import HttpClientMixin
 from .http import _http_errors
 
-ASSET = 1
-CONTENT = 2
-
+from .constants import ASSET
+from .constants import CONTENT
 
 Base = declarative_base()
 metadata = Base.metadata
