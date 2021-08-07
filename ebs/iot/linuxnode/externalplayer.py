@@ -79,6 +79,7 @@ class ExternalMediaPlayer(object):
             '--no-osd', '--aspect-mode', 'letterbox',
             '--layer', str(self._layer),
             '--win', '{0},{1},{2},{3}'.format(x, y, x + width, y + height),
+            '--adev', 'hdmi',
         ]
         if self._loop:
             args.append('--loop')
