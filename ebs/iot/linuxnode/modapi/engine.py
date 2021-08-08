@@ -4,7 +4,7 @@ from twisted import logger
 from twisted.internet.defer import succeed
 from twisted.internet.task import LoopingCall
 
-from ..http import HTTPError
+from ..common import HTTPError
 from .primitives import ApiPersistentActionQueue
 
 
@@ -153,8 +153,9 @@ class ModularHttpApiEngine(ModularApiEngineBase):
     _api_baseurl = ''
     _api_headers = {}
 
-    def __init__(self, actual):
+    def __init__(self, actual, config=None):
         super(ModularHttpApiEngine, self).__init__(actual)
+        self._config = config
         self._api_token = None
         self._internet_connected = False
         self._internet_link = None
@@ -174,7 +175,10 @@ class ModularHttpApiEngine(ModularApiEngineBase):
 
     @property
     def config(self):
-        return self._actual.config
+        if self._config:
+            return self._config
+        else:
+            return self._actual.config
 
     """ Network Status Primitives """
 
