@@ -261,18 +261,22 @@ class ModularHttpApiEngine(ModularApiEngineBase):
         d.addCallback(request_builder)
 
         def _get_response(params):
-            self.log.debug("Executing API Request to {} \n"
-                           "   with content '{}'\n"
-                           "   and headers '{}'".format(url, params, self._api_headers))
+            self.log.debug("Executing API Request to {url} \n"
+                           "   with content '{content}'\n"
+                           "   and headers '{headers}'", 
+                           url=url, content=params, headers=self._api_headers)
             r = self.http_post(url, json=params, headers=self._api_headers)
             return r
         d.addCallback(_get_response)
 
         def _error_handler(failure):
+            self.log.failure("Attempting to handle API Error : {failure}", failure=failure)
             if isinstance(failure.value, HTTPError) and \
                     failure.value.response.code == 403:
+                self.log.debug("Encountered 403 Error. Attempting API Token Reset.")
                 self.api_token_reset()
             if not self.api_reconnect_task.running:
+                self.log.debug("Starting API Reconnect Task")
                 self.api_engine_reconnect()
             return failure
         d.addCallbacks(response_handler, _error_handler)

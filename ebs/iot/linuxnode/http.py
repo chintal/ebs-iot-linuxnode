@@ -25,8 +25,9 @@ from twisted.internet.error import TimeoutError
 from twisted.internet.error import DNSLookupError
 from twisted.internet.error import ConnectError
 from twisted.internet.error import NoRouteError
-from twisted.web.error import SchemeNotSupported
 from twisted.web.client import ResponseNeverReceived
+from twisted.web.client import ResponseFailed
+from twisted.web.error import SchemeNotSupported
 
 from .shell.network import NetworkInfoMixin
 
@@ -52,13 +53,15 @@ class DefaultHeadersHttpClient(HTTPClient):
     def get(self, url, **kwargs):
         headers = kwargs.pop('headers', {})
         headers.update(self._default_headers)
-        kwargs['headers'] = headers
+        # TODO This breaks everything
+        # kwargs['headers'] = headers
         return super(DefaultHeadersHttpClient, self).get(url, headers=headers, **kwargs)
 
     def post(self, url, **kwargs):
         headers = kwargs.pop('headers', {})
         headers.update(self._default_headers)
-        kwargs['headers'] = headers
+        # TODO This breaks everything
+        # kwargs['headers'] = headers
         return super(DefaultHeadersHttpClient, self).post(url, headers=headers, **kwargs)
 
 
@@ -117,8 +120,9 @@ class HttpClientMixin(NetworkInfoMixin, NodeBusyMixin,
 
     def http_get(self, url, **kwargs):
         self.log.debug("Executing HTTP GET Request\n"
-                       "  to URL {} \n"
-                       "  with {}".format(url, kwargs))
+                       " to URL {url}\n"
+                       " with kwargs {kwargs}", 
+                       url=url, kwargs=kwargs)
         deferred_response = self.http_semaphore.run(
             self.http_client.get, url, **kwargs
         )
@@ -133,8 +137,9 @@ class HttpClientMixin(NetworkInfoMixin, NodeBusyMixin,
 
     def http_post(self, url, **kwargs):
         self.log.debug("Executing HTTP Post Request\n"
-                       "  to URL {}\n"
-                       "  with {}\n".format(url, kwargs))
+                       " to URL {url}\n"
+                       " with kwargs {kwargs}",
+                       url=url, kwargs=kwargs)
         deferred_response = self.http_semaphore.run(
             self.http_client.post, url, **kwargs
         )
@@ -239,6 +244,7 @@ class HttpClientMixin(NetworkInfoMixin, NodeBusyMixin,
         return d
 
     def _http_error_handler(self, failure, url=None):
+        self.log.failure("HTTP Connection Failure : ", failure=failure)
         failure.trap(HTTPError, DNSLookupError, ResponseNeverReceived, SchemeNotSupported)
         if isinstance(failure.value, HTTPError):
             self.log.warn(
@@ -256,20 +262,29 @@ class HttpClientMixin(NetworkInfoMixin, NodeBusyMixin,
                 "Response never received for {url}. Underlying error is {e}",
                 url=url, e=failure.value.reasons
             )
-
+        if isinstance(failure.value, ResponseFailed):
+            self.log.warn(
+                "Response Failed for {url}. Underlying error is {e}",
+                url=url, e=failure.value.reasons
+            )
+        if isinstance(failure.value, SchemeNotSupported):
+            self.log.warn(
+                "Got an unsupported scheme for {url}. Check your URL and "
+                "try again.", url=url
+            )
         return failure
 
     def _http_check_response(self, response):
         if 400 < response.code < 600:
             self.log.info("Got a HTTP Error\n"
-                          "  with Response Code : {}\n"
-                          "  and Response Headers : {}\n"
-                          "".format(response.code, response.headers))
+                          "with Response Code : {code}\n"
+                          "and Response Headers : {headers}\n",
+                          code=response.code, headers=response.headers)
 
             d = response.content()
 
             def _log_error_content(r):
-                self.log.debug("  Got Response Content : {}".format(r))
+                self.log.info("  Got Response Content : {msg}", msg=r)
             d.addCallback(_log_error_content)
 
             raise HTTPError(response=response)
