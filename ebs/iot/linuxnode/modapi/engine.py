@@ -265,12 +265,12 @@ class ModularHttpApiEngine(ModularApiEngineBase):
                            "   with content '{content}'\n"
                            "   and headers '{headers}'", 
                            url=url, content=params, headers=self._api_headers)
-            r = self.http_post(url, json=params, headers=self._api_headers)
+            r = self.http_post(url, timeout=120, json=params, headers=self._api_headers)
             return r
         d.addCallback(_get_response)
 
         def _error_handler(failure):
-            self.log.failure("Attempting to handle API Error : {failure}", failure=failure)
+            self.log.failure("Attempting to handle API Error", failure=failure)
             if isinstance(failure.value, HTTPError) and \
                     failure.value.response.code == 403:
                 self.log.debug("Encountered 403 Error. Attempting API Token Reset.")

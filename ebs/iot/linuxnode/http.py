@@ -53,15 +53,11 @@ class DefaultHeadersHttpClient(HTTPClient):
     def get(self, url, **kwargs):
         headers = kwargs.pop('headers', {})
         headers.update(self._default_headers)
-        # TODO This breaks everything
-        # kwargs['headers'] = headers
         return super(DefaultHeadersHttpClient, self).get(url, headers=headers, **kwargs)
 
     def post(self, url, **kwargs):
         headers = kwargs.pop('headers', {})
         headers.update(self._default_headers)
-        # TODO This breaks everything
-        # kwargs['headers'] = headers
         return super(DefaultHeadersHttpClient, self).post(url, headers=headers, **kwargs)
 
 
@@ -150,6 +146,7 @@ class HttpClientMixin(NetworkInfoMixin, NodeBusyMixin,
         )
 
         def _parse_json_response(response):
+            self.log.debug("Attempting to extract JSON from response {r}", r=response)
             return response.json()
         deferred_response.addCallbacks(
             _parse_json_response,
@@ -244,7 +241,7 @@ class HttpClientMixin(NetworkInfoMixin, NodeBusyMixin,
         return d
 
     def _http_error_handler(self, failure, url=None):
-        self.log.failure("HTTP Connection Failure : ", failure=failure)
+        self.log.failure("HTTP Connection Failure to {url} : ", failure=failure, url=url)
         failure.trap(HTTPError, DNSLookupError, ResponseNeverReceived, SchemeNotSupported)
         if isinstance(failure.value, HTTPError):
             self.log.warn(
@@ -262,7 +259,7 @@ class HttpClientMixin(NetworkInfoMixin, NodeBusyMixin,
                 "Response never received for {url}. Underlying error is {e}",
                 url=url, e=failure.value.reasons
             )
-        if isinstance(failure.value, ResponseFailed):
+        elif isinstance(failure.value, ResponseFailed):
             self.log.warn(
                 "Response Failed for {url}. Underlying error is {e}",
                 url=url, e=failure.value.reasons
