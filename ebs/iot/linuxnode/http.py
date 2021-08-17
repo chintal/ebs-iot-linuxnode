@@ -25,7 +25,9 @@ from twisted.internet.error import TimeoutError
 from twisted.internet.error import DNSLookupError
 from twisted.internet.error import ConnectError
 from twisted.internet.error import NoRouteError
+from twisted.web.error import SchemeNotSupported
 from twisted.web.client import ResponseNeverReceived
+
 from .shell.network import NetworkInfoMixin
 
 _http_errors = (HTTPError, DNSLookupError, NoRouteError,
@@ -50,12 +52,14 @@ class DefaultHeadersHttpClient(HTTPClient):
     def get(self, url, **kwargs):
         headers = kwargs.pop('headers', {})
         headers.update(self._default_headers)
-        return super(DefaultHeadersHttpClient, self).get(url, **kwargs)
+        kwargs['headers'] = headers
+        return super(DefaultHeadersHttpClient, self).get(url, headers=headers, **kwargs)
 
     def post(self, url, **kwargs):
         headers = kwargs.pop('headers', {})
         headers.update(self._default_headers)
-        return super(DefaultHeadersHttpClient, self).post(url, **kwargs)
+        kwargs['headers'] = headers
+        return super(DefaultHeadersHttpClient, self).post(url, headers=headers, **kwargs)
 
 
 class WatchfulBodyCollector(Protocol):
@@ -112,6 +116,9 @@ class HttpClientMixin(NetworkInfoMixin, NodeBusyMixin,
         super(HttpClientMixin, self).__init__(*args, **kwargs)
 
     def http_get(self, url, **kwargs):
+        self.log.debug("Executing HTTP GET Request\n"
+                       "  to URL {} \n"
+                       "  with {}".format(url, kwargs))
         deferred_response = self.http_semaphore.run(
             self.http_client.get, url, **kwargs
         )
@@ -125,6 +132,9 @@ class HttpClientMixin(NetworkInfoMixin, NodeBusyMixin,
         return deferred_response
 
     def http_post(self, url, **kwargs):
+        self.log.debug("Executing HTTP Post Request\n"
+                       "  to URL {}\n"
+                       "  with {}\n".format(url, kwargs))
         deferred_response = self.http_semaphore.run(
             self.http_client.post, url, **kwargs
         )
@@ -229,7 +239,7 @@ class HttpClientMixin(NetworkInfoMixin, NodeBusyMixin,
         return d
 
     def _http_error_handler(self, failure, url=None):
-        failure.trap(HTTPError, DNSLookupError, ResponseNeverReceived)
+        failure.trap(HTTPError, DNSLookupError, ResponseNeverReceived, SchemeNotSupported)
         if isinstance(failure.value, HTTPError):
             self.log.warn(
                 "Encountered error {e} while trying to {method} {url}",
@@ -246,14 +256,22 @@ class HttpClientMixin(NetworkInfoMixin, NodeBusyMixin,
                 "Response never received for {url}. Underlying error is {e}",
                 url=url, e=failure.value.reasons
             )
+
         return failure
 
-    @staticmethod
-    def _http_check_response(response):
+    def _http_check_response(self, response):
         if 400 < response.code < 600:
-            # print(response.headers)
-            # d = response.content()
-            # d.addCallback(print)
+            self.log.info("Got a HTTP Error\n"
+                          "  with Response Code : {}\n"
+                          "  and Response Headers : {}\n"
+                          "".format(response.code, response.headers))
+
+            d = response.content()
+
+            def _log_error_content(r):
+                self.log.debug("  Got Response Content : {}".format(r))
+            d.addCallback(_log_error_content)
+
             raise HTTPError(response=response)
         return response
 

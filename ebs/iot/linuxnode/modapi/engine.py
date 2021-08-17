@@ -97,6 +97,7 @@ class ModularApiEngineBase(object):
 
         def _enter_reconnection_cycle(failure):
             self.log.error("Can't connect to {0} API endpoint".format(self._prefix))
+            self.log.failure("Connection Failure : ", failure=failure)
             self.api_endpoint_connected = False
             if not self.api_reconnect_task.running:
                 self.api_engine_reconnect()
@@ -260,6 +261,9 @@ class ModularHttpApiEngine(ModularApiEngineBase):
         d.addCallback(request_builder)
 
         def _get_response(params):
+            self.log.debug("Executing API Request to {} \n"
+                           "   with content '{}'\n"
+                           "   and headers '{}'".format(url, params, self._api_headers))
             r = self.http_post(url, json=params, headers=self._api_headers)
             return r
         d.addCallback(_get_response)
