@@ -270,9 +270,7 @@ class ModularHttpApiEngine(ModularApiEngineBase):
                 'json': req,
                 'params': params,
             }
-            request_structure = {k: v for k, v in request_structure if v}
-            self.log.debug("Actual request structure : {structure}",
-                           structure=request_structure)
+            request_structure = {k: v for k, v in request_structure.items() if v}
             r = self.http_post(url, timeout=120,
                                headers=self._api_headers,
                                **request_structure)
