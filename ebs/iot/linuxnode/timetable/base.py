@@ -73,7 +73,7 @@ class Timetable(AnimatedTable):
     @property
     def active_entries(self):
         return [x for x in sorted(self._entries, key=lambda y: y.ts_start)
-                if x.ts_start.shift(minutes=-1 * self.prior_window) < arrow.now() < x.ts_end.shift(minutes=self.post_window)]
+                if x.ts_start.shift(minutes=-1 * self.post_window) < arrow.now() < x.ts_end.shift(minutes=self.prior_window)]
 
     def start(self):
         self.log.info("Starting Timetable Redraw Task for {0}".format(self))

@@ -96,8 +96,11 @@ class TranslatableRenderableTable(BasicRenderableTable):
     def i18n(self):
         return self._i18n_current
 
-    def preprocess(self, value):
-        return self.i18n(value)
+    def preprocess(self, value, spec=None):
+        if spec and hasattr(spec, 'i18n') and not spec.i18n:
+            return value
+        else:
+            return self.i18n(value)
 
     def _redraw_title(self, *_):
         pass
