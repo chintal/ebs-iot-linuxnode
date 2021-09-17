@@ -15,6 +15,9 @@ _requires = [
     # Node Id
     'netifaces',
 
+    # System
+    'ifcfg',
+
     # BleedImage
     'colorthief',
     

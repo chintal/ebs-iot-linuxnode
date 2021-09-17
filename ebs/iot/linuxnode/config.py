@@ -163,6 +163,19 @@ class IoTNodeConfig(object):
     def node_id_display_duration(self):
         return self._config.getint('id', 'display_duration', fallback=15)
 
+    # Networks
+    @property
+    def network_interface_wifi(self):
+        return self._config.get('network', 'wifi', fallback='wlan0')
+
+    @property
+    def network_interface_ethernet(self):
+        return self._config.get('network', 'ethernet', fallback='eth0')
+
+    @property
+    def network_interfaces(self):
+        return [self.network_interface_wifi, self.network_interface_ethernet]
+
     # HTTP
     @property
     def http_max_concurrent_requests(self):
