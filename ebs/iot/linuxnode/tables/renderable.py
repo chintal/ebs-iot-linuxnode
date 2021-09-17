@@ -34,7 +34,7 @@ class BasicRenderableTableEntry(BasicTableEntry):
                 'bold': colspec.font_bold
             })
             kwargs = dict(
-                text=self.parent.preprocess(getattr(self, colspec.accessor)),
+                text=self.parent.preprocess(getattr(self, colspec.accessor), colspec),
                 bgcolor=palette.cell_background,
                 color=palette.cell_foreground,
                 size_hint=(colspec.width_hint, None),
@@ -76,7 +76,7 @@ class BasicRenderableTable(BasicTable):
     def palette(self, value):
         self._palette = value
 
-    def preprocess(self, value):
+    def preprocess(self, value, spec=None):
         return str(value)
 
     @property

@@ -35,7 +35,7 @@ class TimetableEntry(BasicRenderableTableEntry):
 
 
 class Timetable(AnimatedTable):
-    _prior_window = 360
+    _prior_window = 30
     _post_window = 60
     _period_page = 12
 
@@ -53,6 +53,14 @@ class Timetable(AnimatedTable):
         super(Timetable, self).__init__(node, spec)
 
     @property
+    def prior_window(self):
+        return self._prior_window
+
+    @property
+    def post_window(self):
+        return self._post_window
+
+    @property
     def log(self):
         if not self._log:
             self._log = logger.Logger(namespace="timetable.{0}".format(self._spec.name),
@@ -65,7 +73,7 @@ class Timetable(AnimatedTable):
     @property
     def active_entries(self):
         return [x for x in sorted(self._entries, key=lambda y: y.ts_start)
-                if x.ts_start.shift(minutes=-1 * self._prior_window) < arrow.now() < x.ts_end.shift(minutes=self._post_window)]
+                if x.ts_start.shift(minutes=-1 * self.post_window) < arrow.now() < x.ts_end.shift(minutes=self.prior_window)]
 
     def start(self):
         self.log.info("Starting Timetable Redraw Task for {0}".format(self))

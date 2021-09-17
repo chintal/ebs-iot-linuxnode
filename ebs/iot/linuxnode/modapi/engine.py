@@ -260,12 +260,20 @@ class ModularHttpApiEngine(ModularApiEngineBase):
         d = self.api_token
         d.addCallback(request_builder)
 
-        def _get_response(params):
+        def _get_response(req: dict):
             self.log.debug("Executing API Request to {url} \n"
                            "   with content '{content}'\n"
                            "   and headers '{headers}'", 
-                           url=url, content=params, headers=self._api_headers)
-            r = self.http_post(url, timeout=120, json=params, headers=self._api_headers)
+                           url=url, content=req, headers=self._api_headers)
+            params = req.pop('_query', [])
+            request_structure = {
+                'json': req,
+                'params': params,
+            }
+            request_structure = {k: v for k, v in request_structure.items() if v}
+            r = self.http_post(url, timeout=120,
+                               headers=self._api_headers,
+                               **request_structure)
             return r
         d.addCallback(_get_response)
 
