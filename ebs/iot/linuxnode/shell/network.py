@@ -1,9 +1,8 @@
 
 
-from . import BaseShellMixin
-from ..config import ConfigMixin
-
 import ifcfg
+from twisted.internet.defer import succeed
+from . import BaseShellMixin
 
 
 class WifiNetworkInfoMixin(BaseShellMixin):
@@ -15,7 +14,7 @@ class WifiNetworkInfoMixin(BaseShellMixin):
         return d
 
 
-class NetworkInfoMixin(WifiNetworkInfoMixin, ConfigMixin):
+class NetworkInfoMixin(WifiNetworkInfoMixin):
     @staticmethod
     def _network_check_interface(interface):
         if_spec = ifcfg.interfaces().get(interface, None)
@@ -51,7 +50,7 @@ class NetworkInfoMixin(WifiNetworkInfoMixin, ConfigMixin):
         for interface in self.network_interfaces:
             if self._network_check_interface(interface):
                 if interface in self.network_interfaces_wifi:
-                    return "/n".join([self.wifi_ssid, self._network_get_ipaddress(interface)])
+                    return self.wifi_ssid
                 else:
-                    return self._network_get_ipaddress(interface)
-        return self.wifi_ssid
+                    return succeed(self._network_get_ipaddress(interface))
+        return succeed(None)
