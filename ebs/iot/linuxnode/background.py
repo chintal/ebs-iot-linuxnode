@@ -162,7 +162,6 @@ class BackgroundGuiMixin(ConfigMixin, BaseGuiMixin):
         self._bg = self._bg_structured
         self.gui_bg_container.add_widget(self._bg_structured)
 
-
     @property
     def gui_bg(self):
         return self._bg
