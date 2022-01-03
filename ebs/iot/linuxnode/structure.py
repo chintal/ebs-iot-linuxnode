@@ -1,9 +1,12 @@
 
+from kivy.uix.relativelayout import RelativeLayout
 from kivy.uix.anchorlayout import AnchorLayout
 from kivy.uix.stacklayout import StackLayout
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.gridlayout import GridLayout
+from kivy.core.window import Window
+
 
 
 class BaseGuiStructureMixin(object):
@@ -21,9 +24,8 @@ class BaseGuiStructureMixin(object):
         self._gui_debug_stack = None
         self._gui_content_root = None
         self._gui_main_content = None
-        self._gui_sidebar_right = None
-        self._gui_sidebar_right_users = set()
-        self._gui_sidebar_left = None
+        self._gui_sidebar = None
+        self._gui_sidebar_users = set()
         self._gui_animation_layer = None
         super(BaseGuiStructureMixin, self).__init__(*args, **kwargs)
 
@@ -131,60 +133,52 @@ class BaseGuiStructureMixin(object):
     @property
     def gui_main_content(self):
         if not self._gui_main_content:
-            self._gui_main_content = FloatLayout()
+            self._gui_main_content = RelativeLayout()
             self.gui_content_root.add_widget(self._gui_main_content)
         return self._gui_main_content
 
     @property
-    def gui_sidebar_right(self):
-        if not self._gui_sidebar_right:
-            x_hint = self.config.sidebar_width / (1 - self.config.sidebar_width)
-            self._gui_sidebar_right = BoxLayout(orientation='vertical',
-                                                size_hint=(x_hint, 1))
-        return self._gui_sidebar_right
+    def gui_sidebar(self):
+        if not self._gui_sidebar:
+            if self.config.portrait:
+                orientation = "horizontal"
+                y_hint = self.config.sidebar_height / (1 - self.config.sidebar_height)
+                size_hint = (1, y_hint)
+            else:
+                orientation = "vertical"
+                x_hint = self.config.sidebar_width / (1 - self.config.sidebar_width)
+                size_hint = (x_hint, 1)
+            self._gui_sidebar = BoxLayout(orientation=orientation,
+                                          size_hint=size_hint)
+        return self._gui_sidebar
 
-    def gui_sidebar_right_show(self, key):
+    def gui_sidebar_show(self, key):
         if not key:
             key = 'unspecified'
-        self._gui_sidebar_right_users.add(key)
-        if not self.gui_sidebar_right.parent:
-            self.log.debug("Showing right sidebar")
-            self.gui_content_root.add_widget(self.gui_sidebar_right)
+        self._gui_sidebar_users.add(key)
+        if not self.gui_sidebar.parent:
+            self.log.debug("Showing sidebar")
+            self.gui_content_root.add_widget(self.gui_sidebar)
 
-    def gui_sidebar_right_hide(self, key):
-        if key not in self._gui_sidebar_right_users:
+    def gui_sidebar_hide(self, key):
+        if key not in self._gui_sidebar_users:
             return
-        self._gui_sidebar_right_users.remove(key)
-        if len(self._gui_sidebar_right_users):
+        self._gui_sidebar_users.remove(key)
+        if len(self._gui_sidebar_users):
             return
-        if self.gui_sidebar_right.parent:
-            self.log.debug("Hiding right sidebar")
-            self.gui_content_root.remove_widget(self.gui_sidebar_right)
-
-    # @property
-    # def gui_sidebar_left(self):
-    #     if not self._gui_sidebar_left:
-    #         self._gui_sidebar_left = FloatLayout(size_hint=((0.28/0.72), 1))
-    #     return self._gui_sidebar_left
-    #
-    # def gui_sidebar_left_show(self):
-    #     if not self.gui_sidebar_left.parent:
-    #         print(self.gui_content_root.children)
-    #         self.gui_content_root.add_widget(
-    #             self.gui_sidebar_left,
-    #             index=len(self.gui_content_root.children)
-    #         )
-    #         self.gui_content_root.do_layout()
-    #         print(self.gui_content_root.children)
-    #
-    # def gui_sidebar_left_hide(self):
-    #     if self.gui_sidebar_left.parent:
-    #         self.gui_content_root.remove_widget(self.gui_sidebar_left)
+        if self.gui_sidebar.parent:
+            self.log.debug("Hiding sidebar")
+            self.gui_content_root.remove_widget(self.gui_sidebar)
 
     @property
     def gui_content_root(self):
         if not self._gui_content_root:
-            self._gui_content_root = GridLayout(rows=1, spacing=10)
+            params = {'spacing': 10}
+            if self.config.portrait:
+                params['orientation'] = 'vertical'
+            else:
+                params['orientation'] = 'horizontal'
+            self._gui_content_root = BoxLayout(**params)
             self.gui_root.add_widget(self._gui_content_root,
                                      len(self.gui_root.children) - 1)
         return self._gui_content_root
