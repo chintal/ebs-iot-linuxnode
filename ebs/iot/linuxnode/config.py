@@ -90,12 +90,36 @@ class IoTNodeConfig(object):
         return self._config.getboolean('display', 'fullscreen', fallback=True)
 
     @property
+    def portrait(self):
+        return self._config.getboolean('display', 'portrait', fallback=False)
+
+    @property
+    def flip(self):
+        return self._config.getboolean('display', 'flip', fallback=False)
+
+    @property
+    def orientation(self):
+        rv = 0
+        if self.portrait is True:
+            rv += 90
+        if self.flip:
+            rv += 180
+        return rv
+
+    @property
     def overlay_mode(self):
         return self._config.getboolean('display', 'overlay_mode', fallback=False)
 
     @property
     def sidebar_width(self):
         return self._config.getfloat('display', 'sidebar_width', fallback=0.3)
+
+    @property
+    def sidebar_height(self):
+        rv = self._config.getfloat('display', 'sidebar_height', fallback=0.0)
+        if not rv:
+            rv = self.sidebar_width
+        return rv
 
     @property
     def show_foundation(self):
