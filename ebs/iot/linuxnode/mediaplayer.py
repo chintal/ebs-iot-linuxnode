@@ -154,10 +154,12 @@ class MediaPlayerGuiMixin(OverlayWindowGuiMixin):
         self.gui_mediaview.add_widget(self._media_playing)
 
     def _media_play_video_omxplayer(self, filepath, loop=False):
+        geometry = self.geometry_transform(
+            self.gui_mediaview.x, self.gui_mediaview.y,
+            self.gui_mediaview.width, self.gui_mediaview.height
+        )
         self._media_playing = ExternalMediaPlayer(
-            filepath,
-            (self.gui_mediaview.x, self.gui_mediaview.y,
-             self.gui_mediaview.width, self.gui_mediaview.height),
+            filepath, geometry,
             self.media_stop, self, layer=None, loop=False,
             dbus_name='org.mpris.MediaPlayer2.omxplayer2'
         )
@@ -188,24 +190,29 @@ class MediaPlayerGuiMixin(OverlayWindowGuiMixin):
             self.gui_main_content.add_widget(self._gui_mediaview)
             
             if self.config.video_show_backdrop:
-                self._media_player_backdrop.start(
-                    self.config.video_backdrop_dispmanx_layer,
+                geometry = self.geometry_transform(
                     self.gui_mediaview.x, self.gui_mediaview.y,
                     self.gui_mediaview.width, self.gui_mediaview.height
                 )
+                self._media_player_backdrop.start(
+                    self.config.video_backdrop_dispmanx_layer,
+                    *geometry
+                )
 
                 def _backdrop_geometry(widget, _):
-                    self._media_player_backdrop.set_geometry(
+                    new_geometry = self.geometry_transform(
                         widget.x, widget.y, widget.width, widget.height
                     )
+                    self._media_player_backdrop.set_geometry(*new_geometry)
                 self.gui_mediaview.bind(size=_backdrop_geometry,
                                         pos=_backdrop_geometry)
 
             def _child_geometry(widget, _):
                 if isinstance(self._media_playing, ExternalMediaPlayer):
-                    self._media_playing.set_geometry(
+                    new_geometry = self.geometry_transform(
                         widget.x, widget.y, widget.width, widget.height
                     )
+                    self._media_playing.set_geometry(*new_geometry)
             self.gui_mediaview.bind(size=_child_geometry,
                                     pos=_child_geometry)
         return self._gui_mediaview

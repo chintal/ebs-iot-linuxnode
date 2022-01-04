@@ -60,9 +60,10 @@ class BackgroundGuiMixin(ConfigMixin, BaseGuiMixin):
 
             def _child_geometry(widget, _):
                 if isinstance(self._bg, ExternalMediaPlayer):
-                    self._bg.set_geometry(
+                    new_geometry = self.geometry_transform(
                         widget.x, widget.y, widget.width, widget.height
                     )
+                    self._bg.set_geometry(*new_geometry)
             self.gui_main_content.bind(size=_child_geometry,
                                        pos=_child_geometry)
         return self._bg_container
@@ -124,8 +125,10 @@ class BackgroundGuiMixin(ConfigMixin, BaseGuiMixin):
 
     def _gui_bg_video_external(self, value):
         self.log.info("Starting external background video player")
-        geometry = (self.gui_bg_container.x, self.gui_bg_container.y,
-                    self.gui_bg_container.width, self.gui_bg_container.height)
+        geometry = self.geometry_transform(
+            self.gui_bg_container.x, self.gui_bg_container.y,
+            self.gui_bg_container.width, self.gui_bg_container.height
+        )
         self._bg_video = ExternalMediaPlayer(
             value, geometry, None, self, loop=True,
             layer=self.config.background_dispmanx_layer,

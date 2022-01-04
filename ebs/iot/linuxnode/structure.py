@@ -197,3 +197,21 @@ class BaseGuiStructureMixin(object):
             self._gui_root = FloatLayout()
         return self._gui_root
 
+    @property
+    def window_size(self):
+        return Window.size
+
+    @property
+    def window_height(self):
+        return self.window_size[0]
+
+    @property
+    def window_width(self):
+        return self.window_size[1]
+
+    def geometry_transform(self, x, y, width, height):
+        if self.config.portrait:
+            return y, y, width, height
+        else:
+            return x, y, width, height
+
