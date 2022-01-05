@@ -33,6 +33,7 @@ _requires = [
 
     # RPi Mediaplayer
     'omxplayer-wrapper',
+    'pymediainfo',
 
     # PdfPlayer
     'pdf2image',

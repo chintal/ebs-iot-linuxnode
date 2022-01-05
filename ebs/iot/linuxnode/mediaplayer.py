@@ -161,7 +161,8 @@ class MediaPlayerGuiMixin(OverlayWindowGuiMixin):
         self._media_playing = ExternalMediaPlayer(
             filepath, geometry,
             self.media_stop, self, layer=None, loop=False,
-            dbus_name='org.mpris.MediaPlayer2.omxplayer2'
+            dbus_name='org.mpris.MediaPlayer2.omxplayer2',
+            orientation=self.config.orientation
         )
 
     def media_stop(self, forced=False):

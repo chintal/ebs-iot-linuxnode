@@ -203,15 +203,16 @@ class BaseGuiStructureMixin(object):
 
     @property
     def window_height(self):
-        return self.window_size[0]
+        return self.window_size[1]
 
     @property
     def window_width(self):
-        return self.window_size[1]
+        return self.window_size[0]
 
     def geometry_transform(self, x, y, width, height):
+        if self.config.flip:
+            x = self.window_width - width - x
+            y = self.window_height - height - y
         if self.config.portrait:
-            return y, y, width, height
-        else:
-            return x, y, width, height
-
+            x, y, width, height = y, x, height, width
+        return x, y, width, height

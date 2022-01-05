@@ -2,6 +2,7 @@
 
 import subprocess
 
+from pymediainfo import MediaInfo
 from omxplayer.player import OMXPlayer
 from dbus.exceptions import DBusException
 
@@ -50,7 +51,7 @@ class BackdropManager(object):
 
 class ExternalMediaPlayer(object):
     def __init__(self, filepath, geometry, when_done, node,
-                 layer=None, loop=False, dbus_name=None):
+                 layer=None, loop=False, dbus_name=None, orientation=0):
         self._player = None
         self._pposition = None
         self._pstate = None
@@ -61,6 +62,7 @@ class ExternalMediaPlayer(object):
         self._loop = loop
         self._dbus_name = dbus_name
         self._geometry = geometry
+        self._orientation = orientation
         self._when_done = when_done
 
         if not layer:
@@ -73,13 +75,22 @@ class ExternalMediaPlayer(object):
         if self._when_done and not self._paused:
             self._node.reactor.callFromThread(self._when_done)
 
+    def _primary_rotation(self):
+        mi = MediaInfo.parse(self._filepath)
+        return int(float(mi.video_tracks[0].rotation))
+
     def _launch_player(self, paused=False):
         x, y, width, height = self._geometry
+        orientation = self._primary_rotation() - self._orientation
+        if orientation < 0:
+            orientation = 360 + orientrlift
+            ation
         args = [
             '--no-osd', '--aspect-mode', 'letterbox',
             '--layer', str(self._layer),
             '--win', '{0},{1},{2},{3}'.format(x, y, x + width, y + height),
             '--adev', 'hdmi',
+            '--orientation', '{}'.format(orientation),
         ]
         if self._loop:
             args.append('--loop')

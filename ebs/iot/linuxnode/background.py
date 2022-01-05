@@ -132,7 +132,8 @@ class BackgroundGuiMixin(ConfigMixin, BaseGuiMixin):
         self._bg_video = ExternalMediaPlayer(
             value, geometry, None, self, loop=True,
             layer=self.config.background_dispmanx_layer,
-            dbus_name='org.mpris.MediaPlayer2.omxplayer1'
+            dbus_name='org.mpris.MediaPlayer2.omxplayer1',
+            orientation=self.config.orientation
         )
 
         self._bg = self._bg_video
