@@ -83,8 +83,7 @@ class ExternalMediaPlayer(object):
         x, y, width, height = self._geometry
         orientation = self._primary_rotation() - self._orientation
         if orientation < 0:
-            orientation = 360 + orientrlift
-            ation
+            orientation = 360 + orientation
         args = [
             '--no-osd', '--aspect-mode', 'letterbox',
             '--layer', str(self._layer),
