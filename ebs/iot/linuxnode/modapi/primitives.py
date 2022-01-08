@@ -1,5 +1,8 @@
-import os
 
+
+import os
+import shutil
+import pickle
 import pqueue
 from twisted.internet.defer import succeed
 
@@ -21,6 +24,11 @@ class ApiPersistentActionQueue(object):
                 getattr(self._api_engine, api_func_name)(*args)
             except pqueue.Empty:
                 break
+            except pickle.UnpicklingError:
+                self._api_queue = None
+                shutil.rmtree(self._api_queue_dir, ignore_errors=True)
+                self._api_engine.log.warn("API persistent queue pickle corrupted. Clearing.")
+                return succeed(True)
         return succeed(True)
 
     def enqueue_action(self, api_func_name, *args):
