@@ -51,14 +51,16 @@ class DefaultHeadersHttpClient(HTTPClient):
         super(DefaultHeadersHttpClient, self).__init__(*args, **kwargs)
 
     def get(self, url, **kwargs):
-        headers = kwargs.pop('headers', {})
-        headers.update(self._default_headers)
-        return super(DefaultHeadersHttpClient, self).get(url, headers=headers, **kwargs)
+        simple_headers = kwargs.pop('headers', {})
+        simple_headers.update(self._default_headers)
+        kwargs['headers'] = simple_headers
+        return super(DefaultHeadersHttpClient, self).get(url, **kwargs)
 
     def post(self, url, **kwargs):
-        headers = kwargs.pop('headers', {})
-        headers.update(self._default_headers)
-        return super(DefaultHeadersHttpClient, self).post(url, headers=headers, **kwargs)
+        simple_headers = kwargs.pop('headers', {})
+        simple_headers.update(self._default_headers)
+        kwargs['headers'] = simple_headers
+        return super(DefaultHeadersHttpClient, self).post(url, **kwargs)
 
 
 class WatchfulBodyCollector(Protocol):
@@ -326,8 +328,7 @@ class HttpClientMixin(NetworkInfoMixin, NodeBusyMixin,
                     self._http_headers['Proxy-Authorization'] = ["Basic {0}".format(auth.strip())]
             else:
                 agent = Agent(reactor=self.reactor)
-            self._http_client = DefaultHeadersHttpClient(agent=agent,
-                                                         headers=self._http_headers)
+            self._http_client = DefaultHeadersHttpClient(agent=agent, headers=self._http_headers)
         return self._http_client
 
     def stop(self):
