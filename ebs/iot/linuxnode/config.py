@@ -93,9 +93,21 @@ class IoTNodeConfig(object):
     def portrait(self):
         return self._config.getboolean('display', 'portrait', fallback=False)
 
+    @portrait.setter
+    def portrait(self, value):
+        self._check_section('display')
+        self._config.set('display', 'portrait', "yes" if value else "no")
+        self._write_config()
+
     @property
     def flip(self):
         return self._config.getboolean('display', 'flip', fallback=False)
+
+    @flip.setter
+    def flip(self, value):
+        self._check_section('display')
+        self._config.set('display', 'flip', "yes" if value else "no")
+        self._write_config()
 
     @property
     def orientation(self):
@@ -105,6 +117,10 @@ class IoTNodeConfig(object):
         if self.flip:
             rv += 180
         return rv
+
+    def orientation_update(self):
+        from kivy.config import Config
+        Config.set('graphics', 'rotation', self.orientation)
 
     @property
     def overlay_mode(self):
