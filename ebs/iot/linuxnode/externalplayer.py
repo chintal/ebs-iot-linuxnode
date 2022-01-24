@@ -6,6 +6,8 @@ from pymediainfo import MediaInfo
 from omxplayer.player import OMXPlayer
 from dbus.exceptions import DBusException
 
+_mediainfo_available = MediaInfo.can_parse()
+
 
 class BackdropManager(object):
     def __init__(self):
@@ -81,16 +83,20 @@ class ExternalMediaPlayer(object):
 
     def _launch_player(self, paused=False):
         x, y, width, height = self._geometry
-        orientation = self._primary_rotation() - self._orientation
-        if orientation < 0:
-            orientation = 360 + orientation
+
         args = [
             '--no-osd', '--aspect-mode', 'letterbox',
             '--layer', str(self._layer),
             '--win', '{0},{1},{2},{3}'.format(x, y, x + width, y + height),
             '--adev', 'hdmi',
-            '--orientation', '{}'.format(orientation),
         ]
+
+        if _mediainfo_available:
+            orientation = self._primary_rotation() - self._orientation
+            if orientation < 0:
+                orientation = 360 + orientation
+            args.extend(['--orientation', '{}'.format(orientation)])
+
         if self._loop:
             args.append('--loop')
 
