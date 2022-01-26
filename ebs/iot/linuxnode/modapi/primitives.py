@@ -28,7 +28,13 @@ class ApiPersistentActionQueue(object):
                 self._api_queue = None
                 shutil.rmtree(self._api_queue_dir, ignore_errors=True)
                 self._api_engine.log.warn("API persistent queue pickle corrupted. Clearing.")
-                return succeed(True)
+                break
+            except Exception as e:
+                # TODO Remove this broad exception
+                self._api_queue = None
+                shutil.rmtree(self._api_queue_dir, ignore_errors=True)
+                self._api_engine.log.warn("Unhandled error in api queue get. \n {} ".format(e))
+                break
         return succeed(True)
 
     def enqueue_action(self, api_func_name, *args):
