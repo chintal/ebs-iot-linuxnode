@@ -147,6 +147,9 @@ class HttpClientMixin(NetworkInfoMixin, NodeBusyMixin,
             self._deferred_error_passthrough
         )
 
+        # TODO putting this here is a bad idea, especially so because it creates
+        #      asymmetry between the GET and POST method behaviors. It should be
+        #      moved into the API Engine instead. See implementation for GET.
         def _parse_json_response(response):
             self.log.debug("Attempting to extract JSON from response {r}", r=response)
             return response.json()

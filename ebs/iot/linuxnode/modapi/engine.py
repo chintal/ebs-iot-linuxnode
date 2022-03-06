@@ -261,19 +261,35 @@ class ModularHttpApiEngine(ModularApiEngineBase):
         d.addCallback(request_builder)
 
         def _get_response(req: dict):
-            self.log.debug("Executing API Request to {url} \n"
+            language = req.pop('_language', 'JSON')
+            language = language.upper()
+            method = req.pop('_method', 'POST')
+            method = method.upper()
+            self.log.debug("Executing {language} API {method} Request to {url} \n"
                            "   with content '{content}'\n"
                            "   and headers '{headers}'", 
-                           url=url, content=req, headers=self._api_headers)
+                           url=url, content=req, headers=self._api_headers,
+                           method=method, language=language)
             params = req.pop('_query', [])
             request_structure = {
                 'json': req,
                 'params': params,
             }
             request_structure = {k: v for k, v in request_structure.items() if v}
-            r = self.http_post(url, timeout=120,
-                               headers=self._api_headers,
-                               **request_structure)
+            if method == 'POST':
+                r = self.http_post(url, timeout=120,
+                                   headers=self._api_headers,
+                                   **request_structure)
+            elif method == 'GET':
+                r = self.http_get(url, timeout=120,
+                                  headers=self._api_headers,
+                                  **request_structure)
+                if language == 'JSON':
+                    r.addCallbacks(
+                        self._parse_json_response
+                    )
+            else:
+                raise ValueError("Method {} not recognized".format(method))
             return r
         d.addCallback(_get_response)
 
@@ -303,3 +319,9 @@ class ModularHttpApiEngine(ModularApiEngineBase):
     def stop(self):
         super(ModularHttpApiEngine, self).stop()
 
+    # API Language Support Infrastructure
+
+    # JSON
+    def _parse_json_response(self, response):
+        self.log.debug("Attempting to extract JSON from response {r}", r=response)
+        return response.json()
