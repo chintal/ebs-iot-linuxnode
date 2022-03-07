@@ -70,6 +70,9 @@ class BackgroundColorMixin(object):
     def make_opaque(self):
         self.bgcolor = color_set_alpha(self.bgcolor, 1)
 
+    def set_bgopacity(self, opacity):
+        self.bgcolor = color_set_alpha(self.bgcolor, opacity)
+
 
 class ColorBoxLayout(BackgroundColorMixin, BoxLayout):
     def __init__(self, **kwargs):
