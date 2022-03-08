@@ -47,6 +47,16 @@ class IoTNodeConfig(object):
             self._config.add_section(section)
             self._write_config()
 
+    def _parse_color(self, value, on_error='auto'):
+        color = value.split(':')
+        if len(color) not in (3, 4):
+            return on_error
+        try:
+            color = (float(x) for x in color)
+        except ValueError:
+            return on_error
+        return tuple(color)
+
     # Paths
     @property
     def app_root(self):
