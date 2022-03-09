@@ -173,7 +173,7 @@ class BaseGuiStructureMixin(object):
     @property
     def gui_content_root(self):
         if not self._gui_content_root:
-            params = {'spacing': 10}
+            params = {'spacing': 0}
             if self.config.portrait:
                 params['orientation'] = 'vertical'
             else:
