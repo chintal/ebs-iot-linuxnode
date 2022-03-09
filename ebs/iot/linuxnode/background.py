@@ -101,7 +101,7 @@ class BackgroundGuiMixin(ConfigMixin, BaseGuiMixin):
             source=value,
             allow_stretch=True,
             keep_ratio=True,
-            bgcolor='auto'
+            bgcolor=self.config.image_bgcolor
         )
         self._bg = self._bg_image
         self.gui_bg_container.add_widget(self._bg_image)

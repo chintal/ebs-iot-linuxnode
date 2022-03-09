@@ -160,6 +160,10 @@ class IoTNodeConfig(object):
         return self._config.get('display-rpi', 'foundation_image', fallback=None)
 
     @property
+    def image_bgcolor(self):
+        return self._parse_color(self._config.get('display', 'image_bgcolor', fallback='auto'))
+
+    @property
     def background(self):
         return self._config.get('display', 'background', fallback='images/background.png')
 
