@@ -140,7 +140,7 @@ class BaseGuiStructureMixin(object):
     @property
     def gui_sidebar(self):
         if not self._gui_sidebar:
-            if self.config.portrait:
+            if self.config.portrait or self.config.os_rotation:
                 orientation = "horizontal"
                 y_hint = self.config.sidebar_height / (1 - self.config.sidebar_height)
                 size_hint = (1, y_hint)
@@ -174,7 +174,7 @@ class BaseGuiStructureMixin(object):
     def gui_content_root(self):
         if not self._gui_content_root:
             params = {'spacing': 0}
-            if self.config.portrait:
+            if self.config.portrait or self.config.os_rotation:
                 params['orientation'] = 'vertical'
             else:
                 params['orientation'] = 'horizontal'
@@ -210,6 +210,8 @@ class BaseGuiStructureMixin(object):
         return self.window_size[0]
 
     def geometry_transform(self, x, y, width, height):
+        if self.config.os_rotation:
+            return x, y, width, height
         if self.config.flip:
             x = self.window_width - width - x
             y = self.window_height - height - y

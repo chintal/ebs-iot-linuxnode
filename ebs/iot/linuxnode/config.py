@@ -128,6 +128,10 @@ class IoTNodeConfig(object):
             rv += 180
         return rv
 
+    @property
+    def os_rotation(self):
+        return self._config.getboolean('display', 'os_rotation', fallback=False)
+
     def orientation_update(self):
         from kivy.config import Config
         Config.set('graphics', 'rotation', self.orientation)
