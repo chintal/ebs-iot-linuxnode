@@ -214,7 +214,10 @@ class ModularHttpApiEngine(ModularApiEngineBase):
 
             def _set_internet_link(l):
                 if l:
-                    self.internet_link = l.decode('utf-8')
+                    if isinstance(l, str):
+                        self.internet_link = l
+                    else:
+                        self.internet_link = l.decode('utf-8')
             ld.addCallback(_set_internet_link)
             return maybe_failure
         d.addBoth(_get_internet_info)

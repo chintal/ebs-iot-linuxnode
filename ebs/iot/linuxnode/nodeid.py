@@ -15,7 +15,7 @@ from .config import ConfigMixin
 
 
 class NodeIDMixin(ConfigMixin, BaseMixin):
-    _node_id_netifaces_fallback_interfaces = ['wlp1s0', 'wlan0', 'eth0']
+    _node_id_netifaces_fallback_interfaces = ['wlp1s0', 'wlan0', 'wlo1', 'eth0']
 
     def __init__(self, *args, **kwargs):
         super(NodeIDMixin, self).__init__(*args, **kwargs)
