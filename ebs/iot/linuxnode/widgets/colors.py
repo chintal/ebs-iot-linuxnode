@@ -4,6 +4,7 @@ from kivy.uix.boxlayout import BoxLayout
 
 from kivy.graphics import Color
 from kivy.graphics import Rectangle
+from kivy.graphics import RoundedRectangle
 from kivy.properties import ListProperty
 
 from itertools import chain
@@ -51,8 +52,10 @@ class Gradient(object):
 
 class BackgroundColorMixin(object):
     bgcolor = ListProperty([1, 1, 1, 1])
+    _bgelement = Rectangle
 
-    def __init__(self, bgcolor=None):
+    def __init__(self, bgcolor=None, **bgparams):
+        self._bgparams = bgparams
         self.bgcolor = bgcolor or [1, 1, 1, 1]
         self._render_bg()
         self.bind(size=self._render_bg, pos=self._render_bg)
@@ -62,7 +65,7 @@ class BackgroundColorMixin(object):
         self.canvas.before.clear()
         with self.canvas.before:
             Color(*self.bgcolor)
-            Rectangle(pos=self.pos, size=self.size)
+            self._bgelement(pos=self.pos, size=self.size, **self._bgparams)
 
     def make_transparent(self):
         self.bgcolor = color_set_alpha(self.bgcolor, 0)
@@ -77,5 +80,13 @@ class BackgroundColorMixin(object):
 class ColorBoxLayout(BackgroundColorMixin, BoxLayout):
     def __init__(self, **kwargs):
         bgcolor = kwargs.pop('bgcolor')
+        bgparams = kwargs.pop('bgparams', {})
         BoxLayout.__init__(self, **kwargs)
-        BackgroundColorMixin.__init__(self, bgcolor=bgcolor)
+        BackgroundColorMixin.__init__(self, bgcolor=bgcolor, **bgparams)
+
+
+class RoundedColorBoxLayout(ColorBoxLayout):
+    _bgelement = RoundedRectangle
+
+    def __init__(self, radius=None, **kwargs):
+        super(RoundedColorBoxLayout, self).__init__(bgparams={'radius': radius}, **kwargs)

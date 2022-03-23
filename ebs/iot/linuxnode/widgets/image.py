@@ -37,8 +37,9 @@ StandardImage = SizeProofImage
 class BleedImage(BackgroundColorMixin, StandardImage):
     def __init__(self, **kwargs):
         bgcolor = kwargs.pop('bgcolor', 'auto')
+        bgparams = kwargs.pop('bgparams', {})
         StandardImage.__init__(self, **kwargs)
-        BackgroundColorMixin.__init__(self)
+        BackgroundColorMixin.__init__(self, **bgparams)
         if bgcolor == 'auto':
             self._autoset_bg_color()
             self.bind(source=self._autoset_bg_color)
