@@ -1,4 +1,3 @@
-import kivy.uix.boxlayout
 
 from ebs.iot.linuxnode.tables.renderable import BasicRenderableTable
 from ebs.iot.linuxnode.tables.spec import BasicTableSpec
